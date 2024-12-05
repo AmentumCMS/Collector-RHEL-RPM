@@ -20,10 +20,12 @@ jobs:
           echo "DATE=$(date '+%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
           echo -e "\n$GITHUB_OUTPUT\n"
           cat $GITHUB_OUTPUT
-          
-      - name: Get disk Space
+
+      - name: Get disk space
         id: DISK  
-        run: df -h
+        run: |
+          df -h
+          fdisk -l | grep -i disk
 
   # Collect-Images:
   #   needs: [Date]
