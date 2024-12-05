@@ -25,7 +25,8 @@ jobs:
         id: DISK  
         run: |
           df -h
-          fdisk -l | grep -i disk
+          echo -e "\nDisk List"
+          sudo fdisk -l | grep -i disk
 
   # Collect-Images:
   #   needs: [Date]
