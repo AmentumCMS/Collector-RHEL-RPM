@@ -1,0 +1,82 @@
+name: RHEL-RPM-Collection
+run-name: ${{ github.actor }} is Collecting Images 🚀
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 0 * * 1" # Update weekly on Monday Midnight
+  workflow_dispatch:
+
+jobs:
+  Date:
+    runs-on: ubuntu-latest
+    outputs:
+      Date: ${{ steps.date.outputs.date }}
+    steps:
+      - name: Get current date
+        id: DATE
+        run: |
+          echo "DATE=$(date '+%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+          echo -e "\n$GITHUB_OUTPUT\n"
+          cat $GITHUB_OUTPUT
+          
+      - name: Get disk Space
+        id: DISK  
+        run: df -h
+
+  # Collect-Images:
+  #   needs: [Date]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     GH_TOKEN: ${{ github.token }}
+  #   strategy:
+  #       matrix:
+  #           set: [Base-Images, Pipeline-Images, Atlassian-Images, Service-Images, Support-Images]
+  #   steps:
+  #     - name: Check out repository code
+  #       uses: actions/checkout@v4
+
+  #     - name: Run Collection Script for ${{ matrix.set }}.txt
+  #       run: ./collect.sh ${{ matrix.set }}.txt
+
+  #     - name: Copy README to ${{ matrix.set }} ISO
+  #       run: cp -v README.md ${{ matrix.set }}/
+
+  #     - name: Install mkisofs
+  #       run: |
+  #         sudo apt-get update -y
+  #         sudo apt-get install -y mkisofs isomd5sum
+
+  #     - name: Make ${{ matrix.set }} ISO
+  #       run: |
+  #         echo "Making ISO of ${{ matrix.set }}"
+  #         mkisofs -J -R -v -T -l \
+  #           -V '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
+  #           -A '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
+  #           -o ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
+  #           ${{ matrix.set }}
+
+  #     - name: Implant MD5 sum into ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+  #       run: implantisomd5 ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+
+  #     - name: Generate ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso Hash
+  #       run: |
+  #         sha256sum -b ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso | tee \
+  #           ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+
+  #     - name: Show ISO & Hash
+  #       run: ls -Alh *.iso*
+
+  #     - name: Send ${{ matrix.set }} ISO to Sharepoint
+  #       uses: amentumservices/sharepoint-file-upload-action@pappasjfed-patch-1
+  #       with:
+  #         file_path: "*.iso*"
+  #         host_name: "${{ secrets.SHAREPOINT_HOST }}"
+  #         site_name: "${{ secrets.SHAREPOINT_SITE }}"
+  #         upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+  #         tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+  #         client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+  #         client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+  #         login_endpoint: "login.microsoftonline.us"
+  #         graph_endpoint: "graph.microsoft.us"

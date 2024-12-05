@@ -1,5 +1,5 @@
 # What is this?
-[![Release](https://github.com/amentumservices/Collector-Maven-Build/actions/workflows/maven-main.yml/badge.svg?branch=main)](https://github.com/amentumservices/Collector-maven-Build/actions/workflows/maven-main.yml)
+[![Release](https://github.com/amentumservices/Collector-RHEL-RPM/actions/workflows/collect.yml/badge.svg?branch=main)](https://github.com/amentumservices/Collector-RHEL-RPM/actions/workflows/collect.yml)
 
 This is a project that automatically collects artifacts to ease in air-gapped transfer from the internet.
 
