@@ -68,6 +68,7 @@ jobs:
         run: |
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
+          /usr/bin/crb enable
           dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree
 
       - name: Run Collection for ${{ matrix.set }}
@@ -88,7 +89,7 @@ jobs:
             EPEL)
               echo "Collecting EPEL RPMs"
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-              subscription-manager repos --list
+              subscription-manager repos --list|grep -i epel
               # reposync --download-metadata \
               #   --repo=rhel-8-for-x86_64-baseos-rpms \
               #   -p ${{ matrix.set }} 
@@ -96,7 +97,7 @@ jobs:
             Docker)
               echo "Collecting Docker RPMs"
               dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-              subscription-manager repos --list
+              subscription-manager repos --list|grep -i docker
               # reposync --download-metadata \
               #   --repo=rhel-8-for-x86_64-baseos-rpms \
               #   -p ${{ matrix.set }}
@@ -106,8 +107,8 @@ jobs:
               ;;
           esac
 
-      - name: Unregister system
-        run: subscription-manager unregister
+      # - name: Unregister system
+      #   run: subscription-manager unregister
 
       - name: Show Capacity
         run: du -chd1 
