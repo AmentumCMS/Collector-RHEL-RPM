@@ -121,11 +121,11 @@ jobs:
 
       - name: Generate ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
+          sha256sum -b /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
             /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -Alh /mnt/${{ matrix.repo }}/*.iso*
+        run: ls -Alh /mnt/*.iso*
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
