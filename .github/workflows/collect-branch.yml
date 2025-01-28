@@ -77,13 +77,13 @@ jobs:
               echo "Collecting CoreOS RPMs"
               reposync --download-metadata \ 
                 --repo=rhel-8-for-x86_64-baseos-rpms \
-                -p ${{ matrix.set }}
+                # -p ${{ matrix.set }}
               ;;
             Appstream)
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \ 
                 --repo=rhel-8-for-x86_64-appstream-rpms \
-                -p ${{ matrix.set }}
+                # -p ${{ matrix.set }}
               ;;
             EPEL)
               echo "Collecting EPEL RPMs"
