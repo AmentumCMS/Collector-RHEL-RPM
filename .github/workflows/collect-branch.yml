@@ -34,7 +34,7 @@ jobs:
     needs: [Date]
     runs-on: ubuntu-24.04
     container:
-      image: docker.io/redhat/ubi8
+      image: redhat/ubi8
       env:
         NODE_ENV: development
         GH_TOKEN: ${{ github.token }}
