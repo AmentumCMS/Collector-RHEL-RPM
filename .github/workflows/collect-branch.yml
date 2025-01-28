@@ -139,3 +139,10 @@ jobs:
         with:
           name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+
+      - name: Clean up
+        run: |
+          rm -rf /mnt/${{ matrix.repo }}
+          rm -rf /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          rm -rf /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          rm -rf /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
