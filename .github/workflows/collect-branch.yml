@@ -99,13 +99,13 @@ jobs:
       - name: ISO Table of contents
         run: |
           tree /mnt/${{ matrix.repo }} \
-            | tee /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.txt
+            | tee /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.txt
+          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ matrix.repo }} ISO
@@ -114,16 +114,16 @@ jobs:
           mkisofs -J -R -v -T -l \
             -V '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
             -A '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
-            -o /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso \
+            -o /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
             /mnt/${{ matrix.repo }}
 
-      - name: Implant MD5 sum into ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
+      - name: Implant MD5 sum into ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
 
-      - name: Generate ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso Hash
+      - name: Generate ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.sha
+          sha256sum -b ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
         run: ls -Alh /mnt/${{ matrix.repo }}/*.iso*
@@ -131,12 +131,12 @@ jobs:
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
-          path: /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
+          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.sha
+          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
