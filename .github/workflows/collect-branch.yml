@@ -113,22 +113,22 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs ${{ matrix.set }})\n"
+          echo -e "Disk Usage $(du -chs /mnt/${{ matrix.set }})\n"
           echo -e "Disk Space $(df -h /mnt)\n"
 
       # - name: Copy README to ${{ matrix.set }} ISO
-      #   run: cp -v README.md ${{ matrix.set }}/
+      #   run: cp -v README.md /mnt/${{ matrix.set }}/
 
       - name: ISO Table of contents
         run: |
-          tree ${{ matrix.set }} \
-            | tee ${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          tree /mnt/${{ matrix.set }} \
+            | tee /mnt/${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: ${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: /mnt/${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ matrix.set }} ISO
@@ -137,29 +137,29 @@ jobs:
           mkisofs -J -R -v -T -l \
             -V '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
             -A '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
-            -o ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
-            ${{ matrix.set }}
+            -o /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
+            /mnt/${{ matrix.set }}
 
       - name: Implant MD5 sum into ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
 
       - name: Generate ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
           sha256sum -b ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+            /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
         run: ls -Alh *.iso*
 
-      - name: Upload ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-          path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-          if-no-files-found: error
+      # - name: Upload ISO
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+      #     path: /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+      #     if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
