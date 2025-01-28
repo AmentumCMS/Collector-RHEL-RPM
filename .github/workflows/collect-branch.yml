@@ -87,7 +87,7 @@ jobs:
               ;;
             EPEL)
               echo "Collecting EPEL RPMs"
-              dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+              dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
               subscription-manager repos --list
               # reposync --download-metadata \
               #   --repo=rhel-8-for-x86_64-baseos-rpms \
