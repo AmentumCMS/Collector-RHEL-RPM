@@ -63,8 +63,9 @@ jobs:
 
       - name: Register system
         run: |
-          sed -i 's/\(def in_container():\)/\1\n    return False/g' /usr/lib64/python*/*-packages/rhsm/config.py
-          subscription-manager register --username '${{ secrets.RHEL_USER }}' --password '${{ secrets.RHEL_PASS }}'
+          rm /etc/rhsm-host
+          # sed -i 's/\(def in_container():\)/\1\n    return False/g' /usr/lib64/python*/*-packages/rhsm/config.py
+          subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           yum update -y
           yum install -y yum-utils createrepo reposync
 
