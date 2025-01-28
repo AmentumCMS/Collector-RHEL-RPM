@@ -95,7 +95,7 @@ jobs:
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-appstream-rpms \
-                -p /mnt/${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} > ${{ matrix.set }}.log &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
@@ -110,7 +110,7 @@ jobs:
               echo "Collecting CodeReady Builder RPMs"
               reposync --download-metadata \
                 --repo=codeready-builder-for-rhel-8-x86_64-rpms \
-                -p /mnt/${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} > ${{ matrix.set }}.log &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
@@ -127,7 +127,7 @@ jobs:
               echo "Collecting EPEL RPMs"
               reposync --download-metadata \
                 --repo=epel \
-                -p /mnt/${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} > ${{ matrix.set }}.log &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
@@ -144,7 +144,7 @@ jobs:
               echo "Collecting Docker RPMs"
               reposync --download-metadata \
                 --repo=docker-ce-stable \
-                -p /mnt/${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} > ${{ matrix.set }}.log &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
