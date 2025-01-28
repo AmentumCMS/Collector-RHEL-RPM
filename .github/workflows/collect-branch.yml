@@ -69,7 +69,7 @@ jobs:
         run: |
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
-          dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree
+          dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
 
       - name: Run Collection for ${{ matrix.set }}
         run: |
@@ -78,27 +78,55 @@ jobs:
               echo "Collecting CoreOS RPMs"
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-baseos-rpms \
-                -p ${{ matrix.set }}
+                -p ${{ matrix.set }} > ${{ matrix.set }}.log &
+                pid=$!
+                echo "Process $pid is running"
+                while kill -0 $pid 2>/dev/null; do
+                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
+                  sleep 10
+                done
+                echo "Process $pid is Complete"
               ;;
             Appstream)
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-appstream-rpms \
-                -p ${{ matrix.set }}
+                -p ${{ matrix.set }} &
+                pid=$!
+                echo "Process $pid is running"
+                while kill -0 $pid 2>/dev/null; do
+                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
+                  sleep 10
+                done
+                echo "Process $pid is Complete"
               ;;
             CodeReady)
               echo "Collecting CodeReady Builder RPMs"
               reposync --download-metadata \
                 --repo=codeready-builder-for-rhel-8-x86_64-rpms \
-                -p ${{ matrix.set }}
+                -p ${{ matrix.set }} &
+                pid=$!
+                echo "Process $pid is running"
+                while kill -0 $pid 2>/dev/null; do
+                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
+                  sleep 10
+                done
+                echo "Process $pid is Complete"
               ;;
             EPEL)
               echo "Registering EPEL Repo"
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
               echo "Collecting EPEL RPMs"
-              # reposync --download-metadata \
-              #   --repo=epel \
-              #   -p ${{ matrix.set }} 
+              reposync --download-metadata \
+                --repo=epel \
+                -p ${{ matrix.set }} &
+                pid=$!
+                echo "Process $pid is running"
+                while kill -0 $pid 2>/dev/null; do
+                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
+                  sleep 10
+                done
+                echo "Process $pid is Complete"
               ;;
             Docker)
               echo "Registering Docker CE Repo"
@@ -106,7 +134,14 @@ jobs:
               echo "Collecting Docker RPMs"
               reposync --download-metadata \
                 --repo=docker-ce-stable \
-                -p ${{ matrix.set }}
+                -p ${{ matrix.set }} &
+                pid=$!
+                echo "Process $pid is running"
+                while kill -0 $pid 2>/dev/null; do
+                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
+                  sleep 10
+                done
+                echo "Process $pid is Complete"
               ;;
             *)
               echo "No valid set found"
@@ -123,6 +158,18 @@ jobs:
 
       - name: Copy README to ${{ matrix.set }} ISO
         run: cp -v README.md ${{ matrix.set }}/
+
+      - name: ISO Table of contents
+        run: |
+          tree ${{ matrix.set }} \
+            | tee ${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+
+      - name: Upload ISO ToC artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          if-no-files-found: error
 
       - name: Make ${{ matrix.set }} ISO
         run: |
@@ -144,17 +191,15 @@ jobs:
       - name: Show ISO & Hash
         run: ls -Alh *.iso*
 
-      # - name: Send ${{ matrix.set }} ISO to Sharepoint
-      #   uses: amentumservices/sharepoint-file-upload-action@pappasjfed-patch-1
-      #   with:
-      #     file_path: "*.iso*"
-      #     host_name: "${{ secrets.SHAREPOINT_HOST }}"
-      #     site_name: "${{ secrets.SHAREPOINT_SITE }}"
-      #     upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-      #     tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-      #     client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-      #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-      #     login_endpoint: "login.microsoftonline.us"
-      #     graph_endpoint: "graph.microsoft.us"
-      
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+          path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+          if-no-files-found: error
 
+      - name: Upload ISO Hash
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
