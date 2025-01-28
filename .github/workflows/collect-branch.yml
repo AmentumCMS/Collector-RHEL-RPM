@@ -38,7 +38,7 @@ jobs:
         matrix:
             os: [8, 9]
             # repo: [rhel-${{ matrix.os }}-for-x86_64-baseos-rpms, rhel-${{ matrix.os }}-for-x86_64-appstream-rpms, codeready-builder-for-rhel-${{ matrix.os }}-x86_64-rpms, epel, docker-ce-stable]
-            repo: [docker-ce-stable]
+            repo: [epel, docker-ce-stable]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
