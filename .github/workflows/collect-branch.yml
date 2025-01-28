@@ -92,20 +92,22 @@ jobs:
                 -p ${{ matrix.set }}
               ;;
             EPEL)
-              echo "Collecting EPEL RPMs"
+              echo "Registering EPEL Repo"
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+              echo "Listing repos"
               subscription-manager repos --list|grep -i epel
+              echo "Collecting EPEL RPMs"
               # reposync --download-metadata \
               #   --repo=rhel-8-for-x86_64-baseos-rpms \
               #   -p ${{ matrix.set }} 
               ;;
             Docker)
-              echo "Collecting Docker RPMs"
+              echo "Registering Docker CE Repo"
               dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-              subscription-manager repos --list|grep -i docker
-              # reposync --download-metadata \
-              #   --repo=rhel-8-for-x86_64-baseos-rpms \
-              #   -p ${{ matrix.set }}
+              echo "Collecting Docker RPMs"
+              reposync --download-metadata \
+                --repo=docker-ce-stable \
+                -p ${{ matrix.set }}
               ;;
             *)
               echo "No valid set found"
