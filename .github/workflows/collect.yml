@@ -84,6 +84,13 @@ jobs:
           echo "Collecting ${{ matrix.repo }} RPMs"
           ./reposync.sh ${{ matrix.repo }}
 
+      - name: Upload reposync log
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
+          path: ${{ matrix.repo }}.log
+          if-no-files-found: error
+
       - name: Unregister system
         run: subscription-manager unregister
 
