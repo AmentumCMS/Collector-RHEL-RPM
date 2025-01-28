@@ -76,7 +76,7 @@ jobs:
             CoreOS)
               echo "Collecting CoreOS RPMs"
               reposync --download-metadata \ 
-                --repo=rhel-8-for-x86_64-baseos-rpms \
+                --repo=rhel-8-for-x86_64-baseos-rpms
                 # -p ${{ matrix.set }}
               ;;
             Appstream)
