@@ -58,17 +58,20 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Show ISO & Hash
+      - name: Show Files
         run: ls -Alht
+
+      - name: List disks
+        run: df -h
 
       - name: Register system
         run: |
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           yum update -y
-          yum search reposync
-          # yum install -y yum-utils createrepo reposync
-
+          yum install -y yum-utils
+          which reposync
+          
       # - name: Run Collection Script for ${{ matrix.set }}.txt
       #   run: ./collect.sh ${{ matrix.set }}.txt
 
@@ -114,4 +117,4 @@ jobs:
       #     graph_endpoint: "graph.microsoft.us"
       
       - name: Unregister system
-        run: subscription-manager unregister --auto-attach
+        run: subscription-manager unregister
