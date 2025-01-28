@@ -174,4 +174,3 @@ jobs:
           client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
           login_endpoint: "login.microsoftonline.us"
           graph_endpoint: "graph.microsoft.us"
-      
