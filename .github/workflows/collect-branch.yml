@@ -30,7 +30,7 @@ jobs:
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
 
-  Collect-RPMs-RHEL8:
+  Collect-RPMs:
     needs: [Date]
     runs-on: ubuntu-24.04
     container:
@@ -51,8 +51,9 @@ jobs:
     strategy:
         max-parallel: 1
         matrix:
-            # set: [rhel-8-for-x86_64-baseos-rpms, rhel-8-for-x86_64-appstream-rpms, codeready-builder-for-rhel-8-x86_64-rpms, epel, docker-ce-stable]
-            set: [docker-ce-stable]
+            os: [8, 9]
+            # repo: [rhel-${{ matrix.os }}-for-x86_64-baseos-rpms, rhel-${{ matrix.os }}-for-x86_64-appstream-rpms, codeready-builder-for-rhel-${{ matrix.os }}-x86_64-rpms, epel, docker-ce-stable]
+            repo: [docker-ce-stable]
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
@@ -74,67 +75,67 @@ jobs:
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
           echo "Registering epel Repo"
-          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${{ matrix.os }}.noarch.rpm
           echo "Registering docker-ce-stable Repo"
           dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
-      - name: Run Collection for ${{ matrix.set }}
+      - name: Run Collection for ${{ matrix.repo }}
         run: |
-          echo "Collecting ${{ matrix.set }} RPMs"
-          ./reposync.sh ${{ matrix.set }}
+          echo "Collecting ${{ matrix.repo }} RPMs"
+          ./reposync.sh ${{ matrix.repo }}
 
       - name: Unregister system
         run: subscription-manager unregister
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ matrix.set }})\n"
+          echo -e "Disk Usage $(du -chs /mnt/${{ matrix.repo }})\n"
           echo -e "Disk Space $(df -h /mnt)\n"
 
-      # - name: Copy README to ${{ matrix.set }} ISO
-      #   run: cp -v README.md /mnt/${{ matrix.set }}/
+      # - name: Copy README to ${{ matrix.repo }} ISO
+      #   run: cp -v README.md /mnt/${{ matrix.repo }}/
 
       - name: ISO Table of contents
         run: |
-          tree /mnt/${{ matrix.set }} \
-            | tee /mnt/${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          tree /mnt/${{ matrix.repo }} \
+            | tee /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          name: ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
-      - name: Make ${{ matrix.set }} ISO
+      - name: Make ${{ matrix.repo }} ISO
         run: |
-          echo "Making ISO of ${{ matrix.set }}"
+          echo "Making ISO of ${{ matrix.repo }}"
           mkisofs -J -R -v -T -l \
-            -V '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
-            -A '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
-            -o /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
-            /mnt/${{ matrix.set }}
+            -V '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
+            -A '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
+            -o /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso \
+            /mnt/${{ matrix.repo }}
 
-      - name: Implant MD5 sum into ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+      - name: Implant MD5 sum into ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
 
-      - name: Generate ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso Hash
+      - name: Generate ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+          sha256sum -b ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -Alh /mnt/${{ matrix.set }}/*.iso*
+        run: ls -Alh /mnt/${{ matrix.repo }}/*.iso*
 
-      # - name: Upload ISO
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-      #     path: /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-      #     if-no-files-found: error
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
+          path: /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso
+          if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+          name: ${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: /mnt/${{ matrix.repo }}-${{ needs.Date.outputs.Date }}.iso.sha
