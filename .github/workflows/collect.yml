@@ -64,10 +64,10 @@ jobs:
       - name: Register system
         run: |
           rm /etc/rhsm-host
-          # sed -i 's/\(def in_container():\)/\1\n    return False/g' /usr/lib64/python*/*-packages/rhsm/config.py
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           yum update -y
-          yum install -y yum-utils createrepo reposync
+          yum search reposync
+          # yum install -y yum-utils createrepo reposync
 
       # - name: Run Collection Script for ${{ matrix.set }}.txt
       #   run: ./collect.sh ${{ matrix.set }}.txt
