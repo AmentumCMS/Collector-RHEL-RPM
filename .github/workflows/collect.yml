@@ -51,7 +51,8 @@ jobs:
     strategy:
         max-parallel: 1
         matrix:
-            set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
+            # set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
+            set: [Docker]
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
@@ -63,7 +64,7 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h /
+        run: df -h / /mnt
 
       - name: Register system and install packages
         run: |
@@ -75,73 +76,30 @@ jobs:
         run: |
           case ${{ matrix.set }} in
             CoreOS)
-              echo "Collecting CoreOS RPMs"
-              reposync --download-metadata \
-                --repo=rhel-8-for-x86_64-baseos-rpms \
-                -p ${{ matrix.set }} > ${{ matrix.set }}.log &
-                pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
-              ;;
+              echo "Collecting ${{ matrix.set }} RPMs"
+              ./reposync.sh rhel-8-for-x86_64-baseos-rpms
+              
+            ;;
             Appstream)
-              echo "Collecting Appstream RPMs"
-              reposync --download-metadata \
-                --repo=rhel-8-for-x86_64-appstream-rpms \
-                -p ${{ matrix.set }} &
-                pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Collecting ${{ matrix.set }} RPMs"
+              ./reposync.sh rhel-8-for-x86_64-appstream-rpms
               ;;
             CodeReady)
-              echo "Collecting CodeReady Builder RPMs"
-              reposync --download-metadata \
-                --repo=codeready-builder-for-rhel-8-x86_64-rpms \
-                -p ${{ matrix.set }} &
-                pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Collecting ${{ matrix.set }} RPMs"
+              ./reposync.sh codeready-builder-for-rhel-8-x86_64-rpms
               ;;
             EPEL)
-              echo "Registering EPEL Repo"
+              echo "Registering ${{ matrix.set }} Repo"
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-              echo "Collecting EPEL RPMs"
-              reposync --download-metadata \
-                --repo=epel \
-                -p ${{ matrix.set }} &
-                pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Collecting ${{ matrix.set }} RPMs"
+              ./reposync.sh epel
+              
               ;;
             Docker)
               echo "Registering Docker CE Repo"
               dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-              echo "Collecting Docker RPMs"
-              reposync --download-metadata \
-                --repo=docker-ce-stable \
-                -p ${{ matrix.set }} &
-                pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Collecting ${{ matrix.set }} RPMs"
+              ./reposync.sh docker-ce-stable
               ;;
             *)
               echo "No valid set found"
@@ -154,10 +112,10 @@ jobs:
       - name: Show Consumption
         run: |
           echo -e "Disk Usage $(du -chs ${{ matrix.set }})\n"
-          echo -e "Disk Space $(df -h /)\n"
+          echo -e "Disk Space $(df -h /mnt)\n"
 
-      - name: Copy README to ${{ matrix.set }} ISO
-        run: cp -v README.md ${{ matrix.set }}/
+      # - name: Copy README to ${{ matrix.set }} ISO
+      #   run: cp -v README.md ${{ matrix.set }}/
 
       - name: ISO Table of contents
         run: |
@@ -204,16 +162,15 @@ jobs:
           name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
 
-      # - name: Send ${{ matrix.set }} ISO to Sharepoint
-      #   uses: amentumservices/sharepoint-file-upload-action@pappasjfed-patch-1
-      #   with:
-      #     file_path: "*.iso*"
-      #     host_name: "${{ secrets.SHAREPOINT_HOST }}"
-      #     site_name: "${{ secrets.SHAREPOINT_SITE }}"
-      #     upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-      #     tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-      #     client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-      #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-      #     login_endpoint: "login.microsoftonline.us"
-      #     graph_endpoint: "graph.microsoft.us"
-      
+      - name: Send ${{ matrix.set }} ISO to Sharepoint
+        uses: amentumvms/sharepoint-file-upload-action
+        with:
+          file_path: "*.iso*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
