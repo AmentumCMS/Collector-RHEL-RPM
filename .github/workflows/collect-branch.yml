@@ -62,7 +62,7 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h
+        run: df -h /
 
       - name: Register system and install packages
         run: |
@@ -94,11 +94,9 @@ jobs:
             EPEL)
               echo "Registering EPEL Repo"
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-              echo "Listing repos"
-              subscription-manager repos --list|grep -i epel
               echo "Collecting EPEL RPMs"
               # reposync --download-metadata \
-              #   --repo=rhel-8-for-x86_64-baseos-rpms \
+              #   --repo=epel \
               #   -p ${{ matrix.set }} 
               ;;
             Docker)
@@ -114,11 +112,13 @@ jobs:
               ;;
           esac
 
-      # - name: Unregister system
-      #   run: subscription-manager unregister
+      - name: Unregister system
+        run: subscription-manager unregister
 
-      - name: Show Capacity
-        run: du -chd1 
+      - name: Show Consumption
+        run: |
+          echo -e "Disk Usage $(du -chs ${{ matrix.set }})\n"
+          echo -e "Disk Space $(df -h /)\n"
 
       # - name: Copy README to ${{ matrix.set }} ISO
       #   run: cp -v README.md ${{ matrix.set }}/
