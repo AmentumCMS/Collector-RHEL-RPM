@@ -149,7 +149,7 @@ jobs:
 
       - name: Clean up
         run: |
-          echo "Remove ${{ matrix.repo }}
+          echo "Remove ${{ matrix.repo }}"
           rm -rf /mnt/${{ matrix.repo }}
           echo "Remove Artifacts"
           rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
