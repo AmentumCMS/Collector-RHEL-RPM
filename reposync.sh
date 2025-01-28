@@ -1,7 +1,7 @@
 #1/bin/bash
 echo "Collecting $1 RPMs"
 reposync --download-metadata \
-  --repo=epel \
+  --repo=$1 \
   -p /mnt/$1 > $1.log &
   pid=$!
 echo "Process $pid is running"
