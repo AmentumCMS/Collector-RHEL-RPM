@@ -43,13 +43,14 @@ jobs:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
+      volumes:
+        - /mnt:/mnt
       # credentials:
       #   username: ${{ secrets.REGISTRY_USER }}
       #   password: ${{ secrets.REGISTRY_TOKEN }}
       # ports:
       #   - 80
-      # volumes:
-      #   - my_docker_volume:/volume_mount
+
     env:
       GH_TOKEN: ${{ github.token }}
 

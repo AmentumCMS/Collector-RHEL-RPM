@@ -6,12 +6,10 @@ reposync --download-metadata \
   pid=$!
 echo "Process $pid is running"
 while kill -0 $pid 2>/dev/null; do
-  free -h
-  df -h
+  free -h | awk 'NR==2 {print $4}'
+  df -h --output[=avail /mnt/$1
   tail -n 1 $1.log
-  echo
-  sleep 15
+  sleep 10
 done
 echo "Process $pid is Complete"
 ls -l /mnt/$1
-du -sh /mnt/$1
