@@ -64,7 +64,7 @@ jobs:
       - name: Register system
         run: |
           sed -i 's/\(def in_container():\)/\1\n    return False/g' /usr/lib64/python*/*-packages/rhsm/config.py
-          subscription-manager register --auto-attach --username ${{ secrets.RHEL_USER }} --password ${{ secrets.RHEL_PASS }}
+          subscription-manager register --username ${{ secrets.RHEL_USER }} --password ${{ secrets.RHEL_PASS }}
           yum update -y
           yum install -y yum-utils createrepo reposync
 
