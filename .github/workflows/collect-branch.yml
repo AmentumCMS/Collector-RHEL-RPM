@@ -68,33 +68,49 @@ jobs:
         run: |
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
-          yum update -y
-          yum install -y yum-utils mkisofs isomd5sum
-          subscription-manager repos --list
+          dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree
 
-      # - name: Run Collection Script for ${{ matrix.set }}.txt
-      #   run: |
-      #     case ${{ matrix.set }} in
-      #       CoreOS)
-      #         echo "Collecting CoreOS RPMs"
-      #         reposync --repoid=coreos
-      #         ;;
-      #       Appstream)
-      #         echo "Collecting Appstream RPMs"
-      #         reposync --repoid=coreos
-      #         ;;
-      #       EPEL)
-      #         echo "Collecting EPEL RPMs"
-      #         reposync --repoid=coreos
-      #         ;;
-      #       Docker)
-      #         echo "Collecting Docker RPMs"
-      #         reposync --repoid=coreos
-      #         ;;
-      #       *)
-      #         echo "No valid set found"
-      #         ;;
-      #     esac
+      - name: Run Collection Script for ${{ matrix.set }}
+        run: |
+          case ${{ matrix.set }} in
+            CoreOS)
+              echo "Collecting CoreOS RPMs"
+              reposync --download-metadata \ 
+                --repoid=rhel-8-for-x86_64-baseos-rpms \
+                -p ${{ matrix.set }}
+              ;;
+            Appstream)
+              echo "Collecting Appstream RPMs"
+              reposync --download-metadata \ 
+                --repoid=rhel-8-for-x86_64-appstream-rpms \
+                -p ${{ matrix.set }}
+              ;;
+            EPEL)
+              echo "Collecting EPEL RPMs"
+              dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+              subscription-manager repos --list
+              # reposync --download-metadata \ 
+              #   --repoid=rhel-8-for-x86_64-baseos-rpms \
+              #   -p ${{ matrix.set }} 
+              ;;
+            Docker)
+              echo "Collecting Docker RPMs"
+              dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+              subscription-manager repos --list
+              # reposync --download-metadata \
+              #   --repoid=rhel-8-for-x86_64-baseos-rpms \
+              #   -p ${{ matrix.set }}
+              ;;
+            *)
+              echo "No valid set found"
+              ;;
+          esac
+
+      - name: Unregister system
+        run: subscription-manager unregister
+
+      - name: Show Capacity
+        run: du -chd1 
 
       # - name: Copy README to ${{ matrix.set }} ISO
       #   run: cp -v README.md ${{ matrix.set }}/
