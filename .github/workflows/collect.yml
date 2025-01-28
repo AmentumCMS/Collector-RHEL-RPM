@@ -81,8 +81,10 @@ jobs:
 
       - name: Run Collection for ${{ matrix.repo }}
         run: |
-          echo "Collecting ${{ matrix.repo }} RPMs"
-          ./reposync.sh ${{ matrix.repo }}
+          export REPO=${${{ matrix.repo }}/matrix/${{ matrix.os }}}
+          echo -e "\nWOrking on repo $REPO\n"
+          echo "Collecting $REPO RPMs"
+          ./reposync.sh $REPO
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
