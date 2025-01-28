@@ -82,7 +82,7 @@ jobs:
             Appstream)
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \ 
-                --repo=rhel-8-for-x86_64-appstream-rpms \
+                --repo=rhel-8-for-x86_64-appstream-rpms 
                 # -p ${{ matrix.set }}
               ;;
             EPEL)
