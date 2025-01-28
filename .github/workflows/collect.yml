@@ -61,6 +61,13 @@ jobs:
       - name: Show ISO & Hash
         run: ls -Alht
 
+      - name: Register system
+        run: |
+          sed -i 's/\(def in_container():\)/\1\n    return False/g' /usr/lib64/python*/*-packages/rhsm/config.py
+          subscription-manager register --auto-attach --username ${{ secrets.RHEL_USER }} --password ${{ secrets.RHEL_PASS }}
+          yum update -y
+          yum install -y yum-utils createrepo reposync
+
       # - name: Run Collection Script for ${{ matrix.set }}.txt
       #   run: ./collect.sh ${{ matrix.set }}.txt
 
@@ -104,3 +111,6 @@ jobs:
       #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
       #     login_endpoint: "login.microsoftonline.us"
       #     graph_endpoint: "graph.microsoft.us"
+      
+      - name: Unregister system
+        run: subscription-manager unregister --auto-attach
