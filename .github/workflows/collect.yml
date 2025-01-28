@@ -162,7 +162,10 @@ jobs:
 
       - name: Clean up
         run: |
+          echo "Remove ${{ matrix.repo }}
           rm -rf /mnt/${{ matrix.repo }}
-          rm -rf /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rf /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rf /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          echo "Remove Artifacts"
+          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          echo "Done"
