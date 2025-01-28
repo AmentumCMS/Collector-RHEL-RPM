@@ -50,7 +50,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     strategy:
         matrix:
-            set: [CoreOS, Appstream, EPEL, Docker]
+            set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
@@ -68,7 +68,6 @@ jobs:
         run: |
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
-          /usr/bin/crb enable
           dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree
 
       - name: Run Collection for ${{ matrix.set }}
@@ -83,8 +82,14 @@ jobs:
             Appstream)
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \
-                --repo=rhel-8-for-x86_64-appstream-rpms 
-                # -p ${{ matrix.set }}
+                --repo=rhel-8-for-x86_64-appstream-rpms \
+                -p ${{ matrix.set }}
+              ;;
+            CodeReady)
+              echo "Collecting CodeReady Builder RPMs"
+              reposync --download-metadata \
+                --repo=codeready-builder-for-rhel-8-x86_64-rpms \
+                -p ${{ matrix.set }}
               ;;
             EPEL)
               echo "Collecting EPEL RPMs"
