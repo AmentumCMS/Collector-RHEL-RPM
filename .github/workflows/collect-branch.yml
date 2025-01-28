@@ -79,28 +79,31 @@ jobs:
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-baseos-rpms \
                 -p ${{ matrix.set }} > ${{ matrix.set }}.log &
-                pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
-              ;;
+              pid=$!
+              echo "Process $pid is running"
+              while kill -0 $pid 2>/dev/null; do
+                free -h
+                df -h / | awk 'NR==2 {print $3}'
+                tail -n 1 ${{ matrix.set }}.log
+                sleep 10
+                sleep 10
+              done
+              echo "Process $pid is Complete"
+            ;;
             Appstream)
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-appstream-rpms \
                 -p ${{ matrix.set }} &
                 pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  free -h
-                  df -h / | awk 'NR==2 {print $3}'
-                  tail -n 1 ${{ matrix.set }}.log
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Process $pid is running"
+              while kill -0 $pid 2>/dev/null; do
+                free -h
+                df -h / | awk 'NR==2 {print $3}'
+                tail -n 1 ${{ matrix.set }}.log
+                sleep 10
+              done
+              echo "Process $pid is Complete"
               ;;
             CodeReady)
               echo "Collecting CodeReady Builder RPMs"
@@ -108,12 +111,14 @@ jobs:
                 --repo=codeready-builder-for-rhel-8-x86_64-rpms \
                 -p ${{ matrix.set }} &
                 pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Process $pid is running"
+              while kill -0 $pid 2>/dev/null; do
+                free -h
+                df -h / | awk 'NR==2 {print $3}'
+                tail -n 1 ${{ matrix.set }}.log
+                sleep 10
+              done
+              echo "Process $pid is Complete"
               ;;
             EPEL)
               echo "Registering EPEL Repo"
@@ -123,12 +128,14 @@ jobs:
                 --repo=epel \
                 -p ${{ matrix.set }} &
                 pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Process $pid is running"
+              while kill -0 $pid 2>/dev/null; do
+                free -h
+                df -h / | awk 'NR==2 {print $3}'
+                tail -n 1 ${{ matrix.set }}.log
+                sleep 10
+              done
+              echo "Process $pid is Complete"
               ;;
             Docker)
               echo "Registering Docker CE Repo"
@@ -138,12 +145,14 @@ jobs:
                 --repo=docker-ce-stable \
                 -p ${{ matrix.set }} &
                 pid=$!
-                echo "Process $pid is running"
-                while kill -0 $pid 2>/dev/null; do
-                  echo -e "Mem:\n$(free -h)\tPackage:\n$(tail -n 1 ${{ matrix.set }}.log\t$(df -h / | awk 'NR==2 {print $3}')"
-                  sleep 10
-                done
-                echo "Process $pid is Complete"
+              echo "Process $pid is running"
+              while kill -0 $pid 2>/dev/null; do
+                free -h
+                df -h / | awk 'NR==2 {print $3}'
+                tail -n 1 ${{ matrix.set }}.log
+                sleep 10
+              done
+              echo "Process $pid is Complete"
               ;;
             *)
               echo "No valid set found"
