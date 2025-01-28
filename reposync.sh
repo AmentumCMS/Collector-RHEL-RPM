@@ -9,7 +9,7 @@ while kill -0 $pid 2>/dev/null; do
   free -h | awk 'NR==2 {print $4}'
   df -h /mnt | awk 'NR==2 {print $4}'
   tail -n 1 $1.log
-  sleep 10
+  sleep 15
 done
 echo "Process $pid is Complete"
 ls -l /mnt/$1

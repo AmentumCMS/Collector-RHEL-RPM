@@ -42,6 +42,7 @@ jobs:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
+        REPO: ${{ steps.set_repo.outputs.repo }}
       volumes:
         - /mnt:/mnt
       # credentials:
@@ -49,9 +50,6 @@ jobs:
       #   password: ${{ secrets.REGISTRY_TOKEN }}
       # ports:
       #   - 80
-
-    env:
-      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Check for dockerenv file
@@ -78,19 +76,26 @@ jobs:
           echo "Registering docker-ce-stable Repo"
           dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
-      - name: Run Collection for ${{ matrix.repo }}
+      - name: Set Dynamic Repos
+        id: set_repo
         run: |
           export REPO=${{ matrix.repo }}
           REPO=${REPO/matrix/${{ matrix.os }}}
           echo -e "\nWorking on repo $REPO\n"
-          echo "Collecting $REPO RPMs"
-          ./reposync.sh $REPO
+          echo "repo=$REPO" >> $GITHUB_ENV
+
+      - name: Run Collection for ${{ matrix.repo }}
+        run: |
+          echo -e "\Collecting repo ${{ steps.set_repo.outputs.repo }}\n"
+          echo "Collecting ${{ steps.set_repo.outputs.repo }} RPMs"
+          ./reposync.sh ${{ steps.set_repo.outputs.repo }}
+          ls *.log
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ matrix.repo }}.log
+          name: ${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
+          path: ${{ steps.set_repo.outputs.repo }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -98,40 +103,40 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ matrix.repo }})\n"
+          echo -e "Disk Usage $(du -chs /mnt/${{ steps.set_repo.outputs.repo }})\n"
           echo -e "Disk Space $(df -h /mnt/)"
 
-      # - name: Copy README to ${{ matrix.repo }} ISO
-      #   run: cp -v README.md /mnt/${{ matrix.repo }}/
+      # - name: Copy README to ${{ steps.set_repo.outputs.repo }} ISO
+      #   run: cp -v README.md /mnt/${{ steps.set_repo.outputs.repo }}/
 
       - name: ISO Table of contents
         run: |
-          tree /mnt/${{ matrix.repo }} \
-            | tee /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          tree /mnt/${{ steps.set_repo.outputs.repo }} \
+            | tee /mnt/${{ steps.set_repo.outputs.repo }}/${{ steps.set_repo.outputs.repo }}=${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          name: ${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: /mnt/${{ steps.set_repo.outputs.repo }}/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
-      - name: Make ${{ matrix.repo }} ISO
+      - name: Make ${{ steps.set_repo.outputs.repo }} ISO
         run: |
-          echo "Making ISO of ${{ matrix.repo }}"
+          echo "Making ISO of ${{ steps.set_repo.outputs.repo }}"
           mkisofs -J -R -v -T -l \
             -V '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
             -A '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
-            -o /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
-            /mnt/${{ matrix.repo }}
+            -o /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
+            /mnt/${{ steps.set_repo.outputs.repo }}
 
-      - name: Implant MD5 sum into ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+      - name: Implant MD5 sum into ${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
 
-      - name: Generate ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
+      - name: Generate ${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          sha256sum -b /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
         run: ls -Alh /mnt/*.iso*
@@ -139,22 +144,24 @@ jobs:
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          name: ${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          name: ${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
+      # Send artifact to sharepoint
+      # CLeanup
       - name: Clean up
         run: |
-          echo "Remove ${{ matrix.repo }}"
-          rm -rf /mnt/${{ matrix.repo }}
+          echo "Remove ${{ steps.set_repo.outputs.repo }}"
+          rm -rf /mnt/${{ steps.set_repo.outputs.repo }}
           echo "Remove Artifacts"
-          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          rm -rfv /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          rm -rfv /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          rm -rfv /mnt/${{ steps.set_repo.outputs.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           echo "Done"
