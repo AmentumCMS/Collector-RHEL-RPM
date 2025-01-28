@@ -10,7 +10,7 @@ on:
 
 jobs:
   Date:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       Date: ${{ steps.date.outputs.date }}
     steps:
@@ -32,11 +32,16 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
-      image: ubi8
+      image: docker.io/redhat/ubi8
       env:
         NODE_ENV: development
+        GH_TOKEN: ${{ github.token }}
+      credentials:
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_TOKEN }}
+
       # ports:
       #   - 80
       # volumes:
