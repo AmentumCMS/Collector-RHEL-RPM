@@ -30,7 +30,7 @@ jobs:
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
 
-  Collect-RPMs:
+  Collect-RPMs-RHEL8:
     needs: [Date]
     runs-on: ubuntu-24.04
     container:
@@ -64,16 +64,37 @@ jobs:
       - name: List disks
         run: df -h
 
-      - name: Register system
+      - name: Register system and install packages
         run: |
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           yum update -y
-          yum install -y yum-utils
-          which reposync
-          
+          yum install -y yum-utils mkisofs isomd5sum
+          subscription-manager repos --list
+
       # - name: Run Collection Script for ${{ matrix.set }}.txt
-      #   run: ./collect.sh ${{ matrix.set }}.txt
+      #   run: |
+      #     case ${{ matrix.set }} in
+      #       CoreOS)
+      #         echo "Collecting CoreOS RPMs"
+      #         reposync --repoid=coreos
+      #         ;;
+      #       Appstream)
+      #         echo "Collecting Appstream RPMs"
+      #         reposync --repoid=coreos
+      #         ;;
+      #       EPEL)
+      #         echo "Collecting EPEL RPMs"
+      #         reposync --repoid=coreos
+      #         ;;
+      #       Docker)
+      #         echo "Collecting Docker RPMs"
+      #         reposync --repoid=coreos
+      #         ;;
+      #       *)
+      #         echo "No valid set found"
+      #         ;;
+      #     esac
 
       # - name: Copy README to ${{ matrix.set }} ISO
       #   run: cp -v README.md ${{ matrix.set }}/
