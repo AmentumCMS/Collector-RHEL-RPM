@@ -51,7 +51,8 @@ jobs:
     strategy:
         max-parallel: 1
         matrix:
-            set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
+            # set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
+            set: [Docker]
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
@@ -78,12 +79,12 @@ jobs:
               echo "Collecting CoreOS RPMs"
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-baseos-rpms \
-                -p ${{ matrix.set }} > ${{ matrix.set }}.log &
+                -p /mnt/${{ matrix.set }} > ${{ matrix.set }}.log &
               pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
-                free -h
-                df -h / | awk 'NR==2 {print $3}'
+                free -h | awk 'NR==2 {print $4}'
+                df -h /mnt | awk 'NR==2 {print $4}'
                 tail -n 1 ${{ matrix.set }}.log
                 sleep 10
                 sleep 10
@@ -94,12 +95,12 @@ jobs:
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-appstream-rpms \
-                -p ${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
-                free -h
-                df -h / | awk 'NR==2 {print $3}'
+                free -h | awk 'NR==2 {print $4}'
+                df -h /mnt | awk 'NR==2 {print $4}'
                 tail -n 1 ${{ matrix.set }}.log
                 sleep 10
               done
@@ -109,12 +110,12 @@ jobs:
               echo "Collecting CodeReady Builder RPMs"
               reposync --download-metadata \
                 --repo=codeready-builder-for-rhel-8-x86_64-rpms \
-                -p ${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
-                free -h
-                df -h / | awk 'NR==2 {print $3}'
+                free -h | awk 'NR==2 {print $4}'
+                df -h /mnt | awk 'NR==2 {print $4}'
                 tail -n 1 ${{ matrix.set }}.log
                 sleep 10
               done
@@ -126,12 +127,12 @@ jobs:
               echo "Collecting EPEL RPMs"
               reposync --download-metadata \
                 --repo=epel \
-                -p ${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
-                free -h
-                df -h / | awk 'NR==2 {print $3}'
+                free -h | awk 'NR==2 {print $4}'
+                df -h /mnt | awk 'NR==2 {print $4}'
                 tail -n 1 ${{ matrix.set }}.log
                 sleep 10
               done
@@ -143,12 +144,12 @@ jobs:
               echo "Collecting Docker RPMs"
               reposync --download-metadata \
                 --repo=docker-ce-stable \
-                -p ${{ matrix.set }} &
+                -p /mnt/${{ matrix.set }} &
                 pid=$!
               echo "Process $pid is running"
               while kill -0 $pid 2>/dev/null; do
-                free -h
-                df -h / | awk 'NR==2 {print $3}'
+                free -h | awk 'NR==2 {print $4}'
+                df -h /mnt | awk 'NR==2 {print $4}'
                 tail -n 1 ${{ matrix.set }}.log
                 sleep 10
               done
