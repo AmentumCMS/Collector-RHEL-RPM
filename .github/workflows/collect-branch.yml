@@ -124,7 +124,7 @@ jobs:
             /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -Alh *.iso*
+        run: ls -Alh /mnt/${{ matrix.set }}/*.iso*
 
       # - name: Upload ISO
       #   uses: actions/upload-artifact@v4
