@@ -66,7 +66,7 @@ jobs:
           ls -Alht
 
       - name: List disks
-        run: df -h /mnt/
+        run: df -h
 
       - name: Register system and install packages
         run: |
