@@ -33,8 +33,14 @@ jobs:
   Collect-RPMs:
     needs: [Date]
     runs-on: ubuntu-24.04
+    strategy:
+        max-parallel: 1
+        matrix:
+            os: [8, 9]
+            # repo: [rhel-${{ matrix.os }}-for-x86_64-baseos-rpms, rhel-${{ matrix.os }}-for-x86_64-appstream-rpms, codeready-builder-for-rhel-${{ matrix.os }}-x86_64-rpms, epel, docker-ce-stable]
+            repo: [docker-ce-stable]
     container:
-      image: docker.io/redhat/ubi8
+      image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         NODE_ENV: development
         GH_TOKEN: ${{ github.token }}
@@ -48,12 +54,7 @@ jobs:
       #   - my_docker_volume:/volume_mount
     env:
       GH_TOKEN: ${{ github.token }}
-    strategy:
-        max-parallel: 1
-        matrix:
-            os: [8, 9]
-            # repo: [rhel-${{ matrix.os }}-for-x86_64-baseos-rpms, rhel-${{ matrix.os }}-for-x86_64-appstream-rpms, codeready-builder-for-rhel-${{ matrix.os }}-x86_64-rpms, epel, docker-ce-stable]
-            repo: [docker-ce-stable]
+
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
