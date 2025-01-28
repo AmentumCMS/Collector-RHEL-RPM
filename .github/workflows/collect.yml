@@ -70,19 +70,19 @@ jobs:
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree
 
-      - name: Run Collection Script for ${{ matrix.set }}
+      - name: Run Collection for ${{ matrix.set }}
         run: |
           case ${{ matrix.set }} in
             CoreOS)
               echo "Collecting CoreOS RPMs"
               reposync --download-metadata \ 
-                --repoid=rhel-8-for-x86_64-baseos-rpms \
+                --repo=rhel-8-for-x86_64-baseos-rpms \
                 -p ${{ matrix.set }}
               ;;
             Appstream)
               echo "Collecting Appstream RPMs"
               reposync --download-metadata \ 
-                --repoid=rhel-8-for-x86_64-appstream-rpms \
+                --repo=rhel-8-for-x86_64-appstream-rpms \
                 -p ${{ matrix.set }}
               ;;
             EPEL)
@@ -90,7 +90,7 @@ jobs:
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
               subscription-manager repos --list
               # reposync --download-metadata \ 
-              #   --repoid=rhel-8-for-x86_64-baseos-rpms \
+              #   --repo=rhel-8-for-x86_64-baseos-rpms \
               #   -p ${{ matrix.set }} 
               ;;
             Docker)
@@ -98,7 +98,7 @@ jobs:
               dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
               subscription-manager repos --list
               # reposync --download-metadata \
-              #   --repoid=rhel-8-for-x86_64-baseos-rpms \
+              #   --repo=rhel-8-for-x86_64-baseos-rpms \
               #   -p ${{ matrix.set }}
               ;;
             *)
