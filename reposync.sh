@@ -12,3 +12,5 @@ while kill -0 $pid 2>/dev/null; do
   sleep 10
 done
 echo "Process $pid is Complete"
+ls -l /mnt/$1
+du -sh /mnt/$1
