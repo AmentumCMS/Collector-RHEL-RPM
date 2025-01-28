@@ -75,13 +75,13 @@ jobs:
           case ${{ matrix.set }} in
             CoreOS)
               echo "Collecting CoreOS RPMs"
-              reposync --download-metadata \ 
-                --repo=rhel-8-for-x86_64-baseos-rpms
-                # -p ${{ matrix.set }}
+              reposync --download-metadata \
+                --repo=rhel-8-for-x86_64-baseos-rpms \
+                -p ${{ matrix.set }}
               ;;
             Appstream)
               echo "Collecting Appstream RPMs"
-              reposync --download-metadata \ 
+              reposync --download-metadata \
                 --repo=rhel-8-for-x86_64-appstream-rpms 
                 # -p ${{ matrix.set }}
               ;;
@@ -89,7 +89,7 @@ jobs:
               echo "Collecting EPEL RPMs"
               dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
               subscription-manager repos --list
-              # reposync --download-metadata \ 
+              # reposync --download-metadata \
               #   --repo=rhel-8-for-x86_64-baseos-rpms \
               #   -p ${{ matrix.set }} 
               ;;
