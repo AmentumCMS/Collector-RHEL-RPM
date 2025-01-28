@@ -2,10 +2,10 @@ name: RHEL-RPM-Collection
 run-name: ${{ github.actor }} is Collecting Images 🚀
 on:
   push:
-    branches:
+    branches-ignore:
       - main
-  schedule:
-    - cron: "0 0 * * 1" # Update weekly on Monday Midnight
+  release:
+    types: [edited, released]
   workflow_dispatch:
 
 jobs:
@@ -146,19 +146,6 @@ jobs:
         with:
           name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-
-      - name: Send ${{ matrix.repo }} ISO artifacts to Sharepoint
-        uses: amentumcms/sharepoint-file-upload-action@pappasjfed-patch-1
-        with:
-          file_path: "/mnt/*.iso*"
-          host_name: "${{ secrets.SHAREPOINT_HOST }}"
-          site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-          login_endpoint: "login.microsoftonline.us"
-          graph_endpoint: "graph.microsoft.us"
 
       - name: Clean up
         run: |
