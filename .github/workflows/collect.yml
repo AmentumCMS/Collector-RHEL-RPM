@@ -81,8 +81,9 @@ jobs:
 
       - name: Run Collection for ${{ matrix.repo }}
         run: |
-          export REPO=${${{ matrix.repo }}/matrix/${{ matrix.os }}}
-          echo -e "\nWOrking on repo $REPO\n"
+          export REPO=${{ matrix.repo }}
+          REPO=${REPO/matrix/${{ matrix.os }}}
+          echo -e "\nWorking on repo $REPO\n"
           echo "Collecting $REPO RPMs"
           ./reposync.sh $REPO
 
