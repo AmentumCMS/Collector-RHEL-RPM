@@ -49,6 +49,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     strategy:
+        max-parallel: 1
         matrix:
             set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
     steps:
@@ -120,33 +121,28 @@ jobs:
           echo -e "Disk Usage $(du -chs ${{ matrix.set }})\n"
           echo -e "Disk Space $(df -h /)\n"
 
-      # - name: Copy README to ${{ matrix.set }} ISO
-      #   run: cp -v README.md ${{ matrix.set }}/
+      - name: Copy README to ${{ matrix.set }} ISO
+        run: cp -v README.md ${{ matrix.set }}/
 
-      # - name: Install mkisofs
-      #   run: |
-      #     sudo apt-get update -y
-      #     sudo apt-get install -y mkisofs isomd5sum
+      - name: Make ${{ matrix.set }} ISO
+        run: |
+          echo "Making ISO of ${{ matrix.set }}"
+          mkisofs -J -R -v -T -l \
+            -V '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
+            -A '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
+            -o ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
+            ${{ matrix.set }}
 
-      # - name: Make ${{ matrix.set }} ISO
-      #   run: |
-      #     echo "Making ISO of ${{ matrix.set }}"
-      #     mkisofs -J -R -v -T -l \
-      #       -V '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
-      #       -A '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
-      #       -o ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
-      #       ${{ matrix.set }}
+      - name: Implant MD5 sum into ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
 
-      # - name: Implant MD5 sum into ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-      #   run: implantisomd5 ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+      - name: Generate ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso Hash
+        run: |
+          sha256sum -b ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
 
-      # - name: Generate ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso Hash
-      #   run: |
-      #     sha256sum -b ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso | tee \
-      #       ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
-
-      # - name: Show ISO & Hash
-      #   run: ls -Alh *.iso*
+      - name: Show ISO & Hash
+        run: ls -Alh *.iso*
 
       # - name: Send ${{ matrix.set }} ISO to Sharepoint
       #   uses: amentumservices/sharepoint-file-upload-action@pappasjfed-patch-1
