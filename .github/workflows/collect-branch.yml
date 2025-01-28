@@ -51,8 +51,8 @@ jobs:
     strategy:
         max-parallel: 1
         matrix:
-            # set: [CoreOS, Appstream, CodeReady, EPEL, Docker]
-            set: [Docker]
+            # set: [rhel-8-for-x86_64-baseos-rpms, rhel-8-for-x86_64-appstream-rpms, codeready-builder-for-rhel-8-x86_64-rpms, epel, docker-ce-stable]
+            set: [docker-ce-stable]
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
@@ -73,40 +73,15 @@ jobs:
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
+          echo "Registering epel Repo"
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+          echo "Registering docker-ce-stable Repo"
+          dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
       - name: Run Collection for ${{ matrix.set }}
         run: |
-          case ${{ matrix.set }} in
-            CoreOS)
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh rhel-8-for-x86_64-baseos-rpms
-              
-            ;;
-            Appstream)
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh rhel-8-for-x86_64-appstream-rpms
-              ;;
-            CodeReady)
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh codeready-builder-for-rhel-8-x86_64-rpms
-              ;;
-            EPEL)
-              echo "Registering ${{ matrix.set }} Repo"
-              dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh epel
-              
-              ;;
-            Docker)
-              echo "Registering Docker CE Repo"
-              dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh docker-ce-stable
-              ;;
-            *)
-              echo "No valid set found"
-              ;;
-          esac
+          echo "Collecting ${{ matrix.set }} RPMs"
+          ./reposync.sh ${{ matrix.set }}
 
       - name: Unregister system
         run: subscription-manager unregister

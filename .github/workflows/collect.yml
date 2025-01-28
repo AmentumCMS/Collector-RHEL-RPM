@@ -61,7 +61,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Show Files
-        run: ls -Alht
+        run: |
+          chmod a+x reposync.sh 
+          ls -Alht
 
       - name: List disks
         run: df -h / /mnt
@@ -71,62 +73,37 @@ jobs:
           rm /etc/rhsm-host
           subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
           dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
+          echo "Registering epel Repo"
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+          echo "Registering docker-ce-stable Repo"
+          dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
       - name: Run Collection for ${{ matrix.set }}
         run: |
-          case ${{ matrix.set }} in
-            CoreOS)
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh rhel-8-for-x86_64-baseos-rpms
-              
-            ;;
-            Appstream)
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh rhel-8-for-x86_64-appstream-rpms
-              ;;
-            CodeReady)
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh codeready-builder-for-rhel-8-x86_64-rpms
-              ;;
-            EPEL)
-              echo "Registering ${{ matrix.set }} Repo"
-              dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh epel
-              
-              ;;
-            Docker)
-              echo "Registering Docker CE Repo"
-              dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-              echo "Collecting ${{ matrix.set }} RPMs"
-              ./reposync.sh docker-ce-stable
-              ;;
-            *)
-              echo "No valid set found"
-              ;;
-          esac
+          echo "Collecting ${{ matrix.set }} RPMs"
+          ./reposync.sh ${{ matrix.set }}
 
       - name: Unregister system
         run: subscription-manager unregister
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs ${{ matrix.set }})\n"
+          echo -e "Disk Usage $(du -chs /mnt/${{ matrix.set }})\n"
           echo -e "Disk Space $(df -h /mnt)\n"
 
       # - name: Copy README to ${{ matrix.set }} ISO
-      #   run: cp -v README.md ${{ matrix.set }}/
+      #   run: cp -v README.md /mnt/${{ matrix.set }}/
 
       - name: ISO Table of contents
         run: |
-          tree ${{ matrix.set }} \
-            | tee ${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          tree /mnt/${{ matrix.set }} \
+            | tee /mnt/${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: ${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: /mnt/${{ matrix.set }}/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ matrix.set }} ISO
@@ -135,32 +112,32 @@ jobs:
           mkisofs -J -R -v -T -l \
             -V '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
             -A '${{ matrix.set }}-${{ needs.Date.outputs.Date }}' \
-            -o ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
-            ${{ matrix.set }}
+            -o /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso \
+            /mnt/${{ matrix.set }}
 
       - name: Implant MD5 sum into ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
 
       - name: Generate ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
           sha256sum -b ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+            /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
         run: ls -Alh *.iso*
 
-      - name: Upload ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-          path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
-          if-no-files-found: error
+      # - name: Upload ISO
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+      #     path: /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso
+      #     if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: ${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: /mnt/${{ matrix.set }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Send ${{ matrix.set }} ISO to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
