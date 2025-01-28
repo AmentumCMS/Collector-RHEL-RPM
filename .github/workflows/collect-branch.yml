@@ -58,6 +58,9 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
+      - name: Show ISO & Hash
+        run: ls -Alht
+
       # - name: Run Collection Script for ${{ matrix.set }}.txt
       #   run: ./collect.sh ${{ matrix.set }}.txt
 
