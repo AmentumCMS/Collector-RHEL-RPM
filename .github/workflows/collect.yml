@@ -1,11 +1,11 @@
-name: RHEL-RPM-Collection (Branch)
-run-name: ${{ github.actor }} is Collecting Images with Branch 🚀
+name: RHEL-RPM-Collection
+run-name: ${{ github.actor }} is Collecting Images 🚀
 on:
   push:
-    branches-ignore:
+    branches:
       - main
-  release:
-    types: [edited, released]
+  schedule:
+    - cron: "0 0 * * 1" # Update weekly on Monday Midnight
   workflow_dispatch:
 
 jobs:
@@ -37,7 +37,8 @@ jobs:
         max-parallel: 1
         matrix:
             os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            repo: [rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -95,8 +96,7 @@ jobs:
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
-          echo -e "\Collecting repo ${{ env.REPO }}\n"
-          echo "Collecting ${{ env.REPO }} RPMs"
+          echo "Collecting repo ${{ env.REPO }} RPMs"
           ./reposync.sh ${{ env.REPO }}
           ls *.log
 
@@ -164,6 +164,19 @@ jobs:
           path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # Send artifact to sharepoint
+      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
+        uses: amentumcms/sharepoint-file-upload-action@main
+        with:
+          file_path: "/mnt/*.iso*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
+
       # Cleanup
       - name: Clean up
         run: |
