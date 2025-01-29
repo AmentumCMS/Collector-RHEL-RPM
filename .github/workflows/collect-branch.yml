@@ -75,7 +75,7 @@ jobs:
           echo "Registering docker-ce-stable Repo"
           dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
-      - name: Set Dynamic Repos
+      - name: Set Dynamic Repo Names
         id: set_repo
         run: |
           export REPO=${{ matrix.repo }}
@@ -83,14 +83,13 @@ jobs:
           echo -e "\nWorking on repo $REPO\n"
           echo "REPO=$REPO" >> $GITHUB_ENV
           echo "Build short repo name"
-          if [[ $REPO == "rhel"*"-rpms" ]]; then
-            SHORT_REPO=${REPO%-rpms*}
-            SHORT_REPO=${SHORT_REPO##*-}
-          elsif [[ $REPO == "codeready"*"-rpms" ]]; then
-            SHORT_REPO=codeready-${{ matrix.os }}
-          else
-            SHORT_REPO=$REPO-${{ matrix.os }}
-          fi
+          case $REPO in
+            *"baseos"*) SHORT_REPO="BaseOS" ;;
+            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
+            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
+            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
+            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
+          esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
 
