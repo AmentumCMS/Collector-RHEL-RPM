@@ -84,7 +84,7 @@ jobs:
           echo "REPO=$REPO" >> $GITHUB_ENV
           echo "Build short repo name"
           case $REPO in
-            *"baseos"*) SHORT_REPO="BaseOS" ;;
+            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
             *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
             *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
             *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
