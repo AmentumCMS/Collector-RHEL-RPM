@@ -174,3 +174,26 @@ jobs:
           rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           echo "Done"
+
+  Release:
+    runs-on: ubuntu-24.04
+    needs: [Date, Collect-RPMs]
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: "*.iso.*"
+
+      - name: Show Artifacts
+        run: ls -A1h *.iso.*
+
+      # Section to actually create a release

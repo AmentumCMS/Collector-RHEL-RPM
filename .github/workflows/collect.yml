@@ -187,3 +187,49 @@ jobs:
           rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           echo "Done"
+
+  Release:
+    runs-on: ubuntu-24.04
+    needs: [Date, Collect-RPMs]
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: "*.iso.*"
+
+      - name: Show Artifacts
+        run: ls -A1h *.iso.*
+
+      # Section to actually create a release
+      - name: Set up git
+        run: |
+          git config user.name "$(git log -n 1 --pretty=format:%an)"
+          git config user.email "$(git log -n 1 --pretty=format:%ae)"
+
+      - name: Create tag
+        uses: rickstaa/action-create-tag@v1
+        id: tag_create
+        with:
+          tag: ${{ needs.Date.outputs.Date }}
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          tag_exists_error: false
+          message: "Release for ${{ needs.Date.outputs.Date }} run"
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
+          tag_name: ${{ needs.Date.outputs.Date }}
+          make_latest: true
+          files: |
+            *.iso.*
