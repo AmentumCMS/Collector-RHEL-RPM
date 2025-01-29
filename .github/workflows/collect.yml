@@ -84,6 +84,12 @@ jobs:
           echo -e "\nWorking on repo $REPO\n"
           echo "repo=$REPO" >> $GITHUB_ENV
 
+      - name: Debug Environment Variables
+        run: |
+          echo "REPO: $REPO"
+          echo "Environment Variable REPO: ${{ env.REPO }}"
+          env
+
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo -e "\Collecting repo ${REPO}\n"
