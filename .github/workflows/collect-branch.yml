@@ -86,16 +86,16 @@ jobs:
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
-          echo -e "\Collecting repo ${{ env.REPO }}\n"
-          echo "Collecting ${{ env.REPO }} RPMs"
-          ./reposync.sh ${{ env.REPO }}
+          echo -e "\Collecting repo ${REPO}\n"
+          echo "Collecting ${REPO} RPMs"
+          ./reposync.sh ${REPO}
           ls *.log
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}.log
+          name: ${REPO}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
+          path: ${REPO}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -103,7 +103,7 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
+          echo -e "Disk Usage $(du -chs /mnt/${REPO})\n"
           echo -e "Disk Space $(df -h /mnt/)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
@@ -111,8 +111,8 @@ jobs:
 
       - name: ISO Table of contents
         run: |
-          tree /mnt/${{ env.REPO }} \
-            | tee /mnt/${{ env.REPO }}/${{ env.REPO }}=${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          tree /mnt/${REPO} \
+            | tee /mnt/${REPO}/${REPO}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
@@ -125,18 +125,18 @@ jobs:
         run: |
           echo "Making ISO of ${{ env.REPO }}"
           mkisofs -J -R -v -T -l \
-            -V '${{ env.REPO }}-${{ needs.Date.outputs.Date }}' \
-            -A '${{ env.REPO }}-${{ needs.Date.outputs.Date }}' \
-            -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
-            /mnt/${{ env.REPO }}
+            -V ${REPO}-${{ needs.Date.outputs.Date }} \
+            -A ${REPO}-${{ needs.Date.outputs.Date }} \
+            -o /mnt/${REPO}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
+            /mnt/${REPO}
 
       - name: Implant MD5 sum into ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${REPO}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
 
       - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          sha256sum -b /mnt/${REPO}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            /mnt/${REPO}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
         run: ls -Alh /mnt/*.iso*
@@ -155,7 +155,7 @@ jobs:
           path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # Send artifact to sharepoint
-      # CLeanup
+      # Cleanup
       - name: Clean up
         run: |
           echo "Remove ${{ env.REPO }}"
