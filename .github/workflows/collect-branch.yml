@@ -81,7 +81,7 @@ jobs:
           export REPO=${{ matrix.repo }}
           REPO=${REPO/matrix/${{ matrix.os }}}
           echo -e "\nWorking on repo $REPO\n"
-          echo "repo=$REPO" >> $GITHUB_ENV
+          echo "REPO=$REPO" >> $GITHUB_ENV
 
       - name: Debug Environment Variables
         run: |
