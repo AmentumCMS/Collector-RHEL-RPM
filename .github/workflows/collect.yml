@@ -42,7 +42,6 @@ jobs:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
-        REPO: ${{ steps.set_repo.outputs.repo }}
       volumes:
         - /mnt:/mnt
       # credentials:
