@@ -133,7 +133,7 @@ jobs:
       - name: Make ${{ env.REPO }} ISO
         run: |
           echo "Making ISO of ${{ env.REPO }}"
-          mkisofs -J -R -v -T -l \
+          mkisofs -r -v -l \
             -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
