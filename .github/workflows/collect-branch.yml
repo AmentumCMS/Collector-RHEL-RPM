@@ -82,6 +82,17 @@ jobs:
           REPO=${REPO/matrix/${{ matrix.os }}}
           echo -e "\nWorking on repo $REPO\n"
           echo "REPO=$REPO" >> $GITHUB_ENV
+          echo "Build short repo name"
+          if [[ $REPO == "rhel"*"-rpms" ]]; then
+            SHORT_REPO=${REPO%-rpms*}
+            SHORT_REPO=${SHORT_REPO##*-}
+          elsif [[ $REPO == "codeready"*"-rpms" ]]; then
+            SHORT_REPO=codeready-${{ matrix.os }}
+          else
+            SHORT_REPO=$REPO-${{ matrix.os }}
+          fi
+          echo "SHORT_REPO=$SHORT_REPO"
+          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
@@ -124,8 +135,8 @@ jobs:
         run: |
           echo "Making ISO of ${{ env.REPO }}"
           mkisofs -J -R -v -T -l \
-            -V ${{ env.REPO }}-${{ needs.Date.outputs.Date }} \
-            -A ${{ env.REPO }}-${{ needs.Date.outputs.Date }} \
+            -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
+            -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
             /mnt/${{ env.REPO }}
 

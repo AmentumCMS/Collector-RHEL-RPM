@@ -1,11 +1,11 @@
-name: RHEL-RPM-Collection
-run-name: ${{ github.actor }} is Collecting Images 🚀
+name: RHEL-RPM-Collection (Branch)
+run-name: ${{ github.actor }} is Collecting Images with Branch 🚀
 on:
   push:
-    branches:
+    branches-ignore:
       - main
-  schedule:
-    - cron: "0 0 * * 1" # Update weekly on Monday Midnight
+  release:
+    types: [edited, released]
   workflow_dispatch:
 
 jobs:
@@ -82,6 +82,17 @@ jobs:
           REPO=${REPO/matrix/${{ matrix.os }}}
           echo -e "\nWorking on repo $REPO\n"
           echo "REPO=$REPO" >> $GITHUB_ENV
+          echo "Build short repo name"
+          if [[ $REPO == "rhel"*"-rpms" ]]; then
+            SHORT_REPO=${REPO%-rpms*}
+            SHORT_REPO=${SHORT_REPO##*-}
+          elsif [[ $REPO == "codeready"*"-rpms" ]]; then
+            SHORT_REPO=codeready-${{ matrix.os }}
+          else
+            SHORT_REPO=$REPO-${{ matrix.os }}
+          fi
+          echo "SHORT_REPO=$SHORT_REPO"
+          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
@@ -124,8 +135,8 @@ jobs:
         run: |
           echo "Making ISO of ${{ env.REPO }}"
           mkisofs -J -R -v -T -l \
-            -V ${{ env.REPO }}-${{ needs.Date.outputs.Date }} \
-            -A ${{ env.REPO }}-${{ needs.Date.outputs.Date }} \
+            -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
+            -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
             /mnt/${{ env.REPO }}
 
@@ -154,19 +165,6 @@ jobs:
           path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # Send artifact to sharepoint
-      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-        uses: amentumcms/sharepoint-file-upload-action@main
-        with:
-          file_path: "/mnt/*.iso*"
-          host_name: "${{ secrets.SHAREPOINT_HOST }}"
-          site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-          login_endpoint: "login.microsoftonline.us"
-          graph_endpoint: "graph.microsoft.us"
-
       # Cleanup
       - name: Clean up
         run: |
