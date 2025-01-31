@@ -120,8 +120,9 @@ jobs:
 
       - name: ISO Table of contents
         run: |
-          tree /mnt/${{ env.REPO }} \
-            | tee /mnt/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          cd /mnt
+          tree ${{ env.REPO }} \
+            | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
@@ -148,7 +149,7 @@ jobs:
             /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -Alh /mnt/*.iso*
+        run: ls -sS1h /mnt/*.iso*
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
@@ -194,6 +195,6 @@ jobs:
           pattern: "*.iso.*"
 
       - name: Show Artifacts
-        run: ls -A1h *.iso.*
+        run: ls -sS1h *.iso.*
 
       # Section to actually create a release
