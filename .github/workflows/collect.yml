@@ -37,8 +37,8 @@ jobs:
         max-parallel: 1
         matrix:
             os: [8, 9]
-            # repo: [rhel-${{ matrix.os }}-for-x86_64-baseos-rpms, rhel-${{ matrix.os }}-for-x86_64-appstream-rpms, codeready-builder-for-rhel-${{ matrix.os }}-x86_64-rpms, epel, docker-ce-stable]
-            repo: [epel, docker-ce-stable]
+            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -50,9 +50,6 @@ jobs:
       #   password: ${{ secrets.REGISTRY_TOKEN }}
       # ports:
       #   - 80
-
-    env:
-      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Check for dockerenv file
@@ -79,16 +76,35 @@ jobs:
           echo "Registering docker-ce-stable Repo"
           dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
-      - name: Run Collection for ${{ matrix.repo }}
+      - name: Set Dynamic Repo Names
+        id: set_repo
         run: |
-          echo "Collecting ${{ matrix.repo }} RPMs"
-          ./reposync.sh ${{ matrix.repo }}
+          export REPO=${{ matrix.repo }}
+          REPO=${REPO/matrix/${{ matrix.os }}}
+          echo -e "\nWorking on repo $REPO\n"
+          echo "REPO=$REPO" >> $GITHUB_ENV
+          echo "Build short repo name"
+          case $REPO in
+            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
+            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
+            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
+            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
+            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
+          esac
+          echo "SHORT_REPO=$SHORT_REPO"
+          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
+
+      - name: Run Collection for ${{ env.REPO }}
+        run: |
+          echo "Collecting repo ${{ env.REPO }} RPMs"
+          ./reposync.sh ${{ env.REPO }}
+          ls *.log
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ matrix.repo }}.log
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
+          path: ${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -96,59 +112,61 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ matrix.repo }})\n"
+          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
           echo -e "Disk Space $(df -h /mnt/)"
 
-      # - name: Copy README to ${{ matrix.repo }} ISO
-      #   run: cp -v README.md /mnt/${{ matrix.repo }}/
+      # - name: Copy README to ${{ env.REPO }} ISO
+      #   run: cp -v README.md /mnt/${{ env.REPO }}/
 
       - name: ISO Table of contents
         run: |
-          tree /mnt/${{ matrix.repo }} \
-            | tee /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          cd /mnt
+          tree ${{ env.REPO }} \
+            | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ matrix.repo }}/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: /mnt/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
-      - name: Make ${{ matrix.repo }} ISO
+      - name: Make ${{ env.REPO }} ISO
         run: |
-          echo "Making ISO of ${{ matrix.repo }}"
-          mkisofs -J -R -v -T -l \
-            -V '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
-            -A '${{ matrix.repo }}-${{ needs.Date.outputs.Date }}' \
-            -o /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
-            /mnt/${{ matrix.repo }}
+          echo "Making ISO of ${{ env.REPO }}"
+          mkisofs -r -v -l \
+            -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
+            -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
+            -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
+            /mnt/${{ env.REPO }}
 
-      - name: Implant MD5 sum into ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+      - name: Implant MD5 sum into ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
 
-      - name: Generate ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
+      - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          sha256sum -b /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -Alh /mnt/*.iso*
+        run: ls -sS1h /mnt/*.iso*
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
-      - name: Send ${{ matrix.repo }} ISO artifacts to Sharepoint
-        uses: amentumcms/sharepoint-file-upload-action@pappasjfed-patch-1
+      # Send artifact to sharepoint
+      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
+        uses: amentumcms/sharepoint-file-upload-action@main
         with:
           file_path: "/mnt/*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
@@ -160,12 +178,59 @@ jobs:
           login_endpoint: "login.microsoftonline.us"
           graph_endpoint: "graph.microsoft.us"
 
+      # Cleanup
       - name: Clean up
         run: |
-          echo "Remove ${{ matrix.repo }}"
-          rm -rf /mnt/${{ matrix.repo }}
+          echo "Remove ${{ env.REPO }}"
+          rm -rf /mnt/${{ env.REPO }}
           echo "Remove Artifacts"
-          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv /mnt/${{ matrix.repo }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           echo "Done"
+
+  Release:
+    runs-on: ubuntu-24.04
+    needs: [Date, Collect-RPMs]
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: "*.iso.*"
+
+      - name: Show Artifacts
+        run: ls -sS1h *.iso.*
+
+      # Section to actually create a release
+      - name: Set up git
+        run: |
+          git config user.name "$(git log -n 1 --pretty=format:%an)"
+          git config user.email "$(git log -n 1 --pretty=format:%ae)"
+
+      - name: Create tag
+        uses: rickstaa/action-create-tag@v1
+        id: tag_create
+        with:
+          tag: ${{ needs.Date.outputs.Date }}
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          tag_exists_error: false
+          message: "Release for ${{ needs.Date.outputs.Date }} run"
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
+          tag_name: ${{ needs.Date.outputs.Date }}
+          make_latest: true
+          files: |
+            *.iso.*

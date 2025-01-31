@@ -1,6 +1,6 @@
 #1/bin/bash
 echo "Collecting $1 RPMs"
-reposync --download-metadata -nm \
+reposync --download-metadata -m \
   --repo=$1 \
   -p /mnt > $1.log &
   pid=$!
