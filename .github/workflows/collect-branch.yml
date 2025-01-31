@@ -1,11 +1,11 @@
-name: RHEL-RPM-Collection
-run-name: ${{ github.actor }} is Collecting Images 🚀
+name: RHEL-RPM-Collection (Branch)
+run-name: ${{ github.actor }} is Collecting Images with Branch 🚀
 on:
   push:
-    branches:
+    branches-ignore:
       - main
-  schedule:
-    - cron: "0 0 * * 1" # Update weekly on Monday Midnight
+  release:
+    types: [edited, released]
   workflow_dispatch:
 
 jobs:
@@ -165,19 +165,6 @@ jobs:
           path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # Send artifact to sharepoint
-      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-        uses: amentumcms/sharepoint-file-upload-action@main
-        with:
-          file_path: "/mnt/*.iso*"
-          host_name: "${{ secrets.SHAREPOINT_HOST }}"
-          site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-          login_endpoint: "login.microsoftonline.us"
-          graph_endpoint: "graph.microsoft.us"
-
       # Cleanup
       - name: Clean up
         run: |
@@ -211,26 +198,3 @@ jobs:
         run: ls -sS1h *.iso.*
 
       # Section to actually create a release
-      - name: Set up git
-        run: |
-          git config user.name "$(git log -n 1 --pretty=format:%an)"
-          git config user.email "$(git log -n 1 --pretty=format:%ae)"
-
-      - name: Create tag
-        uses: rickstaa/action-create-tag@v1
-        id: tag_create
-        with:
-          tag: ${{ needs.Date.outputs.Date }}
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          tag_exists_error: false
-          message: "Release for ${{ needs.Date.outputs.Date }} run"
-
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
-          tag_name: ${{ needs.Date.outputs.Date }}
-          make_latest: true
-          files: |
-            *.iso.*
