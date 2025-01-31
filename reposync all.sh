@@ -2,7 +2,7 @@
 echo "Collecting $1 RPMs"
 reposync --download-metadata -m \
   --repo=$1 \
-  -p /mnt/$1 > $1.log &
+  -p /mnt > $1.log &
   pid=$!
 echo "Process $pid is running"
 
