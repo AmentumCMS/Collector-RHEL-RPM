@@ -32,7 +32,7 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: ubuntu-24.04
+    runs-on: Linux-150G
     strategy:
         max-parallel: 1
         matrix:
@@ -82,7 +82,7 @@ jobs:
       - name: Run Collection for ${{ matrix.repo }}
         run: |
           echo "Collecting ${{ matrix.repo }} RPMs"
-          ./reposync.sh ${{ matrix.repo }}
+          ./reposync-all.sh ${{ matrix.repo }}
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
