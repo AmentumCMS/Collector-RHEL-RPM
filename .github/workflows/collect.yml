@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 0 * * 1" # Update weekly on Monday Midnight
+    - cron: "0 0 1 * *" # Update Monthly on the 1st
   workflow_dispatch:
 
 jobs:
@@ -38,7 +38,6 @@ jobs:
         matrix:
             os: [8, 9]
             repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
-            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -262,14 +261,14 @@ jobs:
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-      uses: amentumcms/sharepoint-file-upload-action@main
-      with:
-        file_path: "/mnt/upload/*.iso*"
-        host_name: "${{ secrets.SHAREPOINT_HOST }}"
-        site_name: "${{ secrets.SHAREPOINT_SITE }}"
-        upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-        tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-        client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-        client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-        login_endpoint: "login.microsoftonline.us"
-        graph_endpoint: "graph.microsoft.us"
+        uses: amentumcms/sharepoint-file-upload-action@main
+        with:
+          file_path: "/mnt/upload/*.iso*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
