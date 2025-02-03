@@ -59,9 +59,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Show Files
-        run: |
-          chmod a+x reposync*.sh 
-          ls -Alht
+        run: ls -Alht
 
       - name: List disks
         run: df -h /mnt
@@ -164,20 +162,6 @@ jobs:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
-      # Send artifact to sharepoint
-      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-        uses: amentumcms/sharepoint-file-upload-action@main
-        with:
-          file_path: "/mnt/*.iso*"
-          host_name: "${{ secrets.SHAREPOINT_HOST }}"
-          site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-          login_endpoint: "login.microsoftonline.us"
-          graph_endpoint: "graph.microsoft.us"
-
       # Cleanup
       - name: Clean up
         run: |
@@ -234,3 +218,58 @@ jobs:
           make_latest: true
           files: |
             *.iso.*
+  # Upload to Sharepoint Job
+  Sharepoint:
+    runs-on: ubuntu-24.04
+    needs: [Date, Collect-RPMs]
+    strategy:
+      matrix:
+          os: [8, 9]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Set Dynamic Repo Names
+        id: set_repo
+        run: |
+          export REPO=${{ matrix.repo }}
+          REPO=${REPO/matrix/${{ matrix.os }}}
+          echo -e "\nWorking on repo $REPO\n"
+          echo "REPO=$REPO" >> $GITHUB_ENV
+          echo "Build short repo name"
+          case $REPO in
+            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
+            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
+            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
+            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
+            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
+          esac
+          echo "SHORT_REPO=$SHORT_REPO"
+          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
+          
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
+          path: /mnt/upload
+
+      - name: List Artifacts
+        run: ls -1sSh /mnt/upload
+
+      # Send Artifacts to Sharepoint
+      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
+      uses: amentumcms/sharepoint-file-upload-action@main
+      with:
+        file_path: "/mnt/upload/*.iso*"
+        host_name: "${{ secrets.SHAREPOINT_HOST }}"
+        site_name: "${{ secrets.SHAREPOINT_SITE }}"
+        upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+        tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+        client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+        client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+        login_endpoint: "login.microsoftonline.us"
+        graph_endpoint: "graph.microsoft.us"
