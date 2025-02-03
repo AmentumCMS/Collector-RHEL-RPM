@@ -1,5 +1,5 @@
 name: RHEL-RPM-Collection (Branch)
-run-name: ${{ github.actor }} is Collecting Images with Branch 🚀
+run-name: ${{ github.actor }} is Collecting New RPMs for ${{ github.ref_name }} 🚀
 on:
   push:
     branches-ignore:

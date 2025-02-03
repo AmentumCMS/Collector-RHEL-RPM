@@ -1,5 +1,5 @@
-name: RHEL-RPM-Collection
-run-name: ${{ github.actor }} is Collecting Images 🚀
+name: RHEL-RPM-Collection (Full)
+run-name: ${{ github.actor }} is Collecting All the RPMS 🚀
 on:
   push:
     branches:
