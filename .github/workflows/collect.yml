@@ -32,7 +32,7 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: ubuntu-24.04
+    runs-on: Linux-150G
     strategy:
         max-parallel: 1
         matrix:
@@ -97,7 +97,7 @@ jobs:
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync.sh ${{ env.REPO }}
+          ./reposync-all.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
