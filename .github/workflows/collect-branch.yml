@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - main
+      - full
   release:
     types: [edited, released]
   workflow_dispatch:
