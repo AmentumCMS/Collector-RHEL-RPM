@@ -60,7 +60,7 @@ jobs:
 
       - name: Show Files
         run: |
-          chmod a+x reposync.sh 
+          chmod a+x reposync*.sh 
           ls -Alht
 
       - name: List disks
