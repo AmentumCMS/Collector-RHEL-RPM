@@ -214,11 +214,12 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
+          name: ${{ vars.COLLECTOR }}-Full ${{ needs.Date.outputs.Date }}
           tag_name: ${{ needs.Date.outputs.Date }}
           make_latest: true
           files: |
             *.iso.*
+
   # Upload to Sharepoint Job
   Sharepoint:
     runs-on: ubuntu-24.04
@@ -256,19 +257,19 @@ jobs:
         with:
           merge-multiple: true
           pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
-          path: /mnt/upload
+          path: /mnt
 
       - name: List Artifacts
-        run: ls -1sSh /mnt/upload
+        run: ls -1sSh /mnt
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "/mnt/upload/*.iso*"
+          file_path: "/mnt/*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}-Full"
           tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
           client_id: ${{ secrets.SHAREPOINT_APP_ID }}
           client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
