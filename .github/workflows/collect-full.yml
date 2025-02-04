@@ -32,7 +32,7 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: Linux-300G
+    runs-on: linux-300G
     strategy:
         max-parallel: 1
         matrix:
