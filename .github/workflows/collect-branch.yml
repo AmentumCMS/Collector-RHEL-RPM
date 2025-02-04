@@ -93,7 +93,7 @@ jobs:
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync-all.sh ${{ env.REPO }}
+          ./reposync.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
