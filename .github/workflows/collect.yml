@@ -111,8 +111,8 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h /mnt/)"
+          echo -e "Disk Usage:\n$(du -chs /mnt/${{ env.REPO }})\n"
+          echo -e "Disk Space:\n$(df -h /mnt/)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md /mnt/${{ env.REPO }}/
