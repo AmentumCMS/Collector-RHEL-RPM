@@ -29,6 +29,8 @@ jobs:
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
+          echo -e "\nPermissions on /mnt"
+          ls -alht /mnt
 
   Collect-RPMs:
     needs: [Date]
@@ -217,6 +219,7 @@ jobs:
           make_latest: true
           files: |
             *.iso.*
+
   # Upload to Sharepoint Job
   Sharepoint:
     runs-on: ubuntu-24.04
@@ -248,7 +251,13 @@ jobs:
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
-          
+
+      - name: Create upload directory
+        run: |
+          sudo mkdir -p /mnt/upload
+          sudo chmod 777 /mnt/upload
+          ls -alht /mnt/upload
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -257,7 +266,7 @@ jobs:
           path: /mnt/upload
 
       - name: List Artifacts
-        run: ls -1sSh /mnt/upload
+        run: ls -1sSh /mnt/upload/*.iso*
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
