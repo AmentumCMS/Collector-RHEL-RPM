@@ -1,10 +1,11 @@
-name: RHEL-RPM-Collection (Branch)
-run-name: ${{ github.actor }} is Collecting New RPMs for ${{ github.ref_name }} 🚀
+name: RHEL-RPM-Collection (Full)
+run-name: ${{ github.actor }} is Collecting All the RPMS 🚀
 on:
   push:
-    branches-ignore:
-      - main
+    branches:
       - full
+  schedule:
+    - cron: "0 0 1 1,4,7,10 *" # Update Quarterly on the 1st
   workflow_dispatch:
 
 jobs:
@@ -28,17 +29,17 @@ jobs:
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
-          echo -e "\nPermissions on /mnt"
-          ls -alht /mnt
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: ubuntu-24.04
+    runs-on: Linux-300G
     strategy:
-        # max-parallel: 1
+        max-parallel: 1
         matrix:
-            os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            os: [8]
+            # os: [8, 9]
+            repo: [rhel-matrix-for-x86_64-appstream-rpms]
+            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -95,7 +96,7 @@ jobs:
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync.sh ${{ env.REPO }}
+          ./reposync-all.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
@@ -195,7 +196,29 @@ jobs:
         run: ls -sS1h *.iso.*
 
       # Section to actually create a release
+      - name: Set up git
+        run: |
+          git config user.name "$(git log -n 1 --pretty=format:%an)"
+          git config user.email "$(git log -n 1 --pretty=format:%ae)"
 
+      - name: Create tag
+        uses: rickstaa/action-create-tag@v1
+        id: tag_create
+        with:
+          tag: ${{ needs.Date.outputs.Date }}
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          tag_exists_error: false
+          message: "Release for ${{ needs.Date.outputs.Date }} run"
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
+          tag_name: ${{ needs.Date.outputs.Date }}
+          make_latest: true
+          files: |
+            *.iso.*
   # Upload to Sharepoint Job
   Sharepoint:
     runs-on: ubuntu-24.04
@@ -227,13 +250,7 @@ jobs:
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
-
-      - name: Create upload directory
-        run: |
-          sudo mkdir -p /mnt/upload
-          sudo chmod 777 /mnt/upload
-          ls -alht /mnt/upload
-
+          
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -242,6 +259,18 @@ jobs:
           path: /mnt/upload
 
       - name: List Artifacts
-        run: ls -1sSh /mnt/upload/*.iso*
+        run: ls -1sSh /mnt/upload
 
       # Send Artifacts to Sharepoint
+      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
+        uses: amentumcms/sharepoint-file-upload-action@main
+        with:
+          file_path: "/mnt/upload/*.iso*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
