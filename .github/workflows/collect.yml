@@ -1,4 +1,4 @@
-name: RHEL-RPM-Collection
+name: RHEL-RPM-Collection (New)
 run-name: ${{ github.actor }} is Collecting New RPMs 🚀
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: Linux-150G
+    runs-on: Ubuntu-24.04
     strategy:
         max-parallel: 1
         matrix:
