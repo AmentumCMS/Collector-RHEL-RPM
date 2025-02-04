@@ -28,12 +28,14 @@ jobs:
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
+          echo -e "\nPermissions on /mnt"
+          ls -alht /mnt
 
   Collect-RPMs:
     needs: [Date]
     runs-on: ubuntu-24.04
     strategy:
-        max-parallel: 1
+        # max-parallel: 1
         matrix:
             os: [8, 9]
             repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
@@ -93,7 +95,7 @@ jobs:
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync-all.sh ${{ env.REPO }}
+          ./reposync.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
@@ -108,8 +110,8 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h /mnt/)"
+          echo -e "Disk Usage:\n$(du -chs /mnt/${{ env.REPO }})\n"
+          echo -e "Disk Space:\n$(df -h /mnt/)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md /mnt/${{ env.REPO }}/
@@ -193,6 +195,7 @@ jobs:
         run: ls -sS1h *.iso.*
 
       # Section to actually create a release
+
   # Upload to Sharepoint Job
   Sharepoint:
     runs-on: ubuntu-24.04
@@ -224,7 +227,13 @@ jobs:
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
-          
+
+      - name: Create upload directory
+        run: |
+          sudo mkdir -p /mnt/upload
+          sudo chmod 777 /mnt/upload
+          ls -alht /mnt/upload
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -233,6 +242,6 @@ jobs:
           path: /mnt/upload
 
       - name: List Artifacts
-        run: ls -1sSh /mnt/upload
+        run: ls -1sSh /mnt/upload/*.iso*
 
       # Send Artifacts to Sharepoint
