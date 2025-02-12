@@ -32,14 +32,14 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: Linux-300G
+    runs-on: linux-300G
     strategy:
         max-parallel: 1
         matrix:
             os: [8]
             # os: [8, 9]
             repo: [rhel-matrix-for-x86_64-appstream-rpms]
-            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -96,7 +96,7 @@ jobs:
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync-all.sh ${{ env.REPO }}
+          ./reposplit.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
