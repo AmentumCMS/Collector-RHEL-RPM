@@ -39,7 +39,7 @@ jobs:
         # max-parallel: 1
         matrix:
             os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -74,6 +74,7 @@ jobs:
           dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${{ matrix.os }}.noarch.rpm
           echo "Registering docker-ce-stable Repo"
           dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+          dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 
       - name: Set Dynamic Repo Names
         id: set_repo
@@ -111,8 +112,8 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h /mnt/)"
+          echo -e "Disk Usage:\n$(du -chs /mnt/${{ env.REPO }})\n"
+          echo -e "Disk Space:\n$(df -h /mnt/)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md /mnt/${{ env.REPO }}/
