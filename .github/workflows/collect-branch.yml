@@ -7,6 +7,7 @@ on:
       - full
       - fullDevelop
       - developFull
+      - fullCollection
   release:
     types: [edited, released]
   workflow_dispatch:
