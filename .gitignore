@@ -9,11 +9,20 @@ node_modules.tar
 coverage/
 docs/
 .yarn/cache
+output/
+
+# Ignore Repositories
+rhel-*-for-x86_64-baseos-rpms/
+rhel-*-for-x86_64-appstream-rpms/
+codeready-builder-for-rhel-*-x86_64-rpms/
+epel/
+docker-ce-stable/
 
 # Ignore Files
 *.tgz
 *.gz
 *.zip
 *.bundle
+*.iso
 *.log
 desktop.ini

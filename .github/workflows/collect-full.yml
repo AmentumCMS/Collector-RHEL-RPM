@@ -64,15 +64,8 @@ jobs:
         run: df -h /mnt
 
       - name: Register system and install packages
-        run: |
-          rm /etc/rhsm-host
-          subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
-          dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
-          echo "Registering epel Repo"
-          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${{ matrix.os }}.noarch.rpm
-          echo "Registering docker-ce-stable Repo"
-          dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-
+        run: ./registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
+          
       - name: Set Dynamic Repo Names
         id: set_repo
         run: |
@@ -128,22 +121,10 @@ jobs:
           path: /mnt/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
-      - name: Make ${{ env.REPO }} ISO
+      - name: Make ${{ env.REPO }} ISOs
         run: |
-          echo "Making ISO of ${{ env.REPO }}"
-          mkisofs -r -v -l \
-            -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
-            -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
-            -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
-            /mnt/${{ env.REPO }}
-
-      - name: Implant MD5 sum into ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-
-      - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
-        run: |
-          sha256sum -b /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          echo "Making ISOs of ${{ env.REPO }}"
+          ./reposplit.sh ${{ env.REPO }} ${{ matrix.os }} ${{ needs.Date.outputs.Date }}
 
       - name: Show ISO & Hash
         run: ls -sS1h /mnt/*.iso*
@@ -160,6 +141,20 @@ jobs:
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+
+      # Send Artifacts to Sharepoint
+      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
+        uses: amentumcms/sharepoint-file-upload-action@main
+        with:
+          file_path: "/mnt/upload/*.iso*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
 
       # Cleanup
       - name: Clean up
@@ -217,58 +212,3 @@ jobs:
           make_latest: true
           files: |
             *.iso.*
-  # Upload to Sharepoint Job
-  Sharepoint:
-    runs-on: ubuntu-24.04
-    needs: [Date, Collect-RPMs]
-    strategy:
-      matrix:
-          os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
-    permissions:
-      contents: write
-      pull-requests: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Set Dynamic Repo Names
-        id: set_repo
-        run: |
-          export REPO=${{ matrix.repo }}
-          REPO=${REPO/matrix/${{ matrix.os }}}
-          echo -e "\nWorking on repo $REPO\n"
-          echo "REPO=$REPO" >> $GITHUB_ENV
-          echo "Build short repo name"
-          case $REPO in
-            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
-            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
-            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
-            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
-            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
-          esac
-          echo "SHORT_REPO=$SHORT_REPO"
-          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
-          
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
-          path: /mnt/upload
-
-      - name: List Artifacts
-        run: ls -1sSh /mnt/upload
-
-      # Send Artifacts to Sharepoint
-      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-        uses: amentumcms/sharepoint-file-upload-action@main
-        with:
-          file_path: "/mnt/upload/*.iso*"
-          host_name: "${{ secrets.SHAREPOINT_HOST }}"
-          site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-          login_endpoint: "login.microsoftonline.us"
-          graph_endpoint: "graph.microsoft.us"
