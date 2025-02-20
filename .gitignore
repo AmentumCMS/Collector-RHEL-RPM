@@ -1,5 +1,5 @@
 # Ignore .vagrant
-.vagrant*
+**/.vagrant*
 
 # Ignore subdirectories
 !.github/**
@@ -12,11 +12,11 @@ docs/
 output/
 
 # Ignore Repositories
-rhel-*-for-x86_64-*-rpms/
-codeready-builder-for-rhel-*-x86_64-rpms/
-epel/
-docker-ce-stable/
-hashicorp/
+**/rhel-*-for-x86_64-*-rpms/
+**/codeready-builder-for-rhel-*-x86_64-rpms/
+**/epel*/
+**/docker-ce-*/
+**/hashicorp/
 
 # Ignore Files
 *.tgz

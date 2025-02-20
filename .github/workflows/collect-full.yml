@@ -42,6 +42,7 @@ jobs:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
+        WORKDIR: /mnt
       volumes:
         - /mnt:/mnt
       # credentials:
@@ -61,11 +62,14 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h /mnt
+        run: df -h ${{ env.WORKDIR }}
+
+      - name: Setup Path
+        run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
 
       - name: Register system and install packages
-        run: ./registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
-          
+        run: registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
+
       - name: Set Dynamic Repo Names
         id: set_repo
         run: |
@@ -86,15 +90,16 @@ jobs:
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
+          cd ${{ env.WORKDIR }}
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync-all.sh ${{ env.REPO }}
+          reposync-all.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}.log
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -102,15 +107,15 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h /mnt/)"
+          echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
+          echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
-      #   run: cp -v README.md /mnt/${{ env.REPO }}/
+      #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
       - name: ISO Table of contents
         run: |
-          cd /mnt
+          cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
@@ -118,35 +123,35 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
-      - name: Make ${{ env.REPO }} ISOs
+      - name: Make ${{ env.REPO }} ISO
         run: |
           echo "Making ISOs of ${{ env.REPO }}"
           ./reposplit.sh ${{ env.REPO }} ${{ matrix.os }} ${{ needs.Date.outputs.Date }}
 
       - name: Show ISO & Hash
-        run: ls -sS1h /mnt/*.iso*
+        run: ls -sS1h ${{ env.WORKDIR }}/*.iso*
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "/mnt/upload/*.iso*"
+          file_path: "${{ env.WORKDIR }}/*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
           upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
@@ -159,12 +164,13 @@ jobs:
       # Cleanup
       - name: Clean up
         run: |
+          cd ${{ env.WORKDIR }}
           echo "Remove ${{ env.REPO }}"
-          rm -rf /mnt/${{ env.REPO }}
+          rm -rf ${{ env.REPO }}
           echo "Remove Artifacts"
-          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           echo "Done"
 
   Release:

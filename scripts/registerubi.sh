@@ -9,5 +9,7 @@ echo "Registering docker-ce-stable Repo"
 dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 echo "Registering hashicorp Repo"
 dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
-echo "Instgalling Software"
+echo "Installing Software"
 dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng ncurses
+echo -e "\nAvailible Repositories:\n"
+dnf repolist
