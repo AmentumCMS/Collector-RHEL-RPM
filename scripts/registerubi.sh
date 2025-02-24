@@ -3,6 +3,7 @@ VERSION=$(grep -oP '(?<=VERSION_ID=")[^.]+' /etc/os-release)
 export PATH=$PATH:$PWD/scripts
 rm -v /etc/rhsm-host /etc/yum.repos.d/ubi.repo
 subscription-manager register --username ${1} --password ${2}
+echo "Installing Software"
 dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng ncurses
 echo "Registering Code Ready Builder Repo"
 /usr/bin/crb enable
