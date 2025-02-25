@@ -99,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}-${{ needs.Date.outputs.Date }}.log
+          path: ${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system
