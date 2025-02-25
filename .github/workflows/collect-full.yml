@@ -34,18 +34,17 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: linux-300G
+    runs-on: linux-150G
     strategy:
         max-parallel: 1
         matrix:
-            os: [8]
-            # os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-baseos-rpms]
-            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            os: [8, 9]
+            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
+        WORKDIR: /mnt
       volumes:
         - /mnt:/mnt
       # credentials:
@@ -65,17 +64,13 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h /mnt
+        run: df -h ${{ env.WORKDIR }}
+
+      - name: Setup Path
+        run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
 
       - name: Register system and install packages
-        run: |
-          rm /etc/rhsm-host
-          subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
-          dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
-          echo "Registering epel Repo"
-          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${{ matrix.os }}.noarch.rpm
-          echo "Registering docker-ce-stable Repo"
-          dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        run: ./scripts/registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
 
       - name: Set Dynamic Repo Names
         id: set_repo
@@ -97,15 +92,16 @@ jobs:
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
+          cd ${{ env.WORKDIR }}
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposync-all.sh ${{ env.REPO }}
+          reposync-all.sh ${{ env.REPO }}
           ls *.log
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}.log
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -113,15 +109,16 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage:\n$(du -chs /mnt/${{ env.REPO }})\n"
-          echo -e "Disk Space:\n$(df -h /mnt/)"
+          echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
+          echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
+
 
       # - name: Copy README to ${{ env.REPO }} ISO
-      #   run: cp -v README.md /mnt/${{ env.REPO }}/
+      #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
       - name: ISO Table of contents
         run: |
-          cd /mnt
+          cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
@@ -129,98 +126,54 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ env.REPO }} ISO
         run: |
-          cd /mnt/${{ env.REPO }}
-          echo -e "Calculating chunks"
-          find . -type f | split -b 8500M -d -a 3 - "chunk_"
-          iso_count=0
-          current_iso_size=0
-
-          echo -e "Creating ISO ${iso_count}"
-          iso_file="../${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}_${iso_count}.iso"
-          
-          # Create an empty ISO to start with
-          mkisofs -o "$iso_file" -J -R /dev/null  \
-            -V ${{ env.SHORT_REPO }}-${iso_count}-${{ needs.Date.outputs.Date }} \
-            -A ${{ env.SHORT_REPO }}-${iso_count}-${{ needs.Date.outputs.Date }}
-          
-          echo -e "Filling ISO with chunks"
-          for chunk in chunk_*; do
-            tar_chunk="$chunk.tar.gz"
-            tar -czf "$tar_chunk" --remove-files "$chunk"
-            tar_chunk_size=$(du -b "$tar_chunk" | cut -f1)
-            echo -e "Chunk $tar_chunk is $tar_chunk_size bytes"
-            if (( current_iso_size + tar_chunk_size > 50000M )); then
-              echo -e "Next chunk will exceed 50GB. Closing current ISO"
-              echo -e "Implanting MD5"
-              implantisomd5 "$iso_file"
-              echo -e "Calculating SHA256"
-              sha256sum -b "$iso_file" | tee "$iso_file.sha"
-              iso_count=$((iso_count + 1))
-              echo -e "Creating next ISO: ${iso_count}"
-              current_iso_size=0
-              iso_file="../${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}_${iso_count}.iso"
-              # Create a new empty ISO
-              mkisofs -o "$iso_file" -J -R /dev/null  \
-                -V ${{ env.SHORT_REPO }}-${iso_count}-${{ needs.Date.outputs.Date }} \
-                -A ${{ env.SHORT_REPO }}-${iso_count}-${{ needs.Date.outputs.Date }}
-            fi
-            echo -e "Adding $tar_chunk to $iso_file"
-            mkisofs -M "$iso_file" -o "$iso_file" -J -R "$tar_chunk"
-            rm "$tar_chunk"
-            current_iso_size=$((current_iso_size + tar_chunk_size))
-            echo -e "Free Disk Space: $(df -h /mnt | awk 'NR==2 {print $4}')"
-          done
-
-          echo -e "Closing Final ISO"
-          implantisomd5 "$iso_file"
-          echo -e "Calculating SHA256"
-              sha256sum -b "$iso_file" | tee "$iso_file.sha"
-          echo "Done making $iso_count ISOs of ${{ env.REPO }}"
+          echo "Making ISOs of ${{ env.REPO }}"
+          chunkiso.sh ${{ env.REPO }} ${{ needs.Date.outputs.Date }}
 
       - name: Show ISO & Hash
-        run: ls -sS1h /mnt/*.iso*
+        run: ls -sS1h ${{ env.WORKDIR }}/*.iso*
 
       - name: Upload ISO SHA artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.sha
-          path: /mnt/*.sha
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
           if-no-files-found: error
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}
-          path: /mnt/*.iso
-          if-no-files-found: error
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
 
-      # - name: Send ISO artifacts to Sharepoint
-      #   uses: amentumcms/sharepoint-file-upload-action@pappasjfed-patch-1
-      #   with:
-      #     file_path: "/mnt/*.iso*"
-      #     host_name: "${{ secrets.SHAREPOINT_HOST }}"
-      #     site_name: "${{ secrets.SHAREPOINT_SITE }}"
-      #     upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}-Full"
-      #     tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-      #     client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-      #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-      #     login_endpoint: "login.microsoftonline.us"
-      #     graph_endpoint: "graph.microsoft.us"
+      # Send Artifacts to Sharepoint
+      - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
+        uses: amentumcms/sharepoint-file-upload-action@main
+        with:
+          file_path: "${{ env.WORKDIR }}/*.iso*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
 
       # Cleanup
       - name: Clean up
         run: |
+          cd ${{ env.WORKDIR }}
           echo "Remove ${{ env.REPO }}"
-          rm -rf /mnt/${{ env.REPO }}
+          rm -rf ${{ env.REPO }}
           echo "Remove Artifacts"
-          rm -rfv /mnt/*.iso
-          rm -rfv /mnt/*.iso.sha
-          rm -rfv /mnt/*.iso.txt
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.txt
           echo "Done"
 
   # Release:
@@ -268,3 +221,4 @@ jobs:
   #         make_latest: true
   #         files: |
   #           /mnt/*.iso.*
+
