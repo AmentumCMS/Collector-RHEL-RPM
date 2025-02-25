@@ -9,6 +9,7 @@ current_iso_size=0
 REPO_NAME=$1
 ISO_FILE="$REPO_NAME-$iso_count.iso"
 chunks_per_iso=12
+export chunkfiles="chunks"
 
 # Create the batch list files
 echo -e "Processing $REPO_NAME"
@@ -43,7 +44,7 @@ for chunk in $chunkfiles/$REPO_NAME-*; do
     mkisofs -M $ISO_FILE -- outdev $ISO_FILE -add $(cat $chunk)
     rm -fv $(cat $chunk)
     echo -e "Free Disk Space: $(df -h . | awk 'NR==2 {print $4}')"
-    current_iso_size=$((current_iso_size) + $(stat -c%s "$ISO_FILE"))
+    current_iso_size=$((current_iso_size) + (stat -c%s "$ISO_FILE"))
     chunk_count=$((chunk_count + 1))
     echo -e "Current iso size $current_iso_size.  Next Chunk $chunk_count"
 done
