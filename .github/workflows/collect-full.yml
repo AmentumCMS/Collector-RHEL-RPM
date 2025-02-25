@@ -29,10 +29,12 @@ jobs:
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
+          echo -e "\nPermissions on /mnt"
+          ls -alht /mnt
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: Linux-150G
+    runs-on: linux-150G
     strategy:
         max-parallel: 1
         matrix:
@@ -110,6 +112,7 @@ jobs:
           echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
           echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
 
+
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
@@ -134,14 +137,14 @@ jobs:
       - name: Show ISO & Hash
         run: ls -sS1h ${{ env.WORKDIR }}/*.iso*
 
-      - name: Upload ISO
+      - name: Upload ISO SHA artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
           if-no-files-found: error
 
-      - name: Upload ISO Hash
+      - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
@@ -173,48 +176,49 @@ jobs:
           rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.txt
           echo "Done"
 
-  Release:
-    runs-on: ubuntu-24.04
-    needs: [Date, Collect-RPMs]
-    permissions:
-      contents: write
-      pull-requests: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
+  # Release:
+  #   runs-on: ubuntu-24.04
+  #   needs: [Date, Collect-RPMs]
+  #   permissions:
+  #     contents: write
+  #     pull-requests: read
+  #   env:
+  #     GH_TOKEN: ${{ github.token }}
+  #   steps:
+  #     - name: Check out repository code
+  #       uses: actions/checkout@v4
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          pattern: "*.iso.*"
+  #     - name: Download Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         merge-multiple: true
+  #         pattern: "*.iso.*"
 
-      - name: Show Artifacts
-        run: ls -sS1h *.iso.*
+  #     - name: Show Artifacts
+  #       run: ls -sS1h *.iso.*
 
-      # Section to actually create a release
-      - name: Set up git
-        run: |
-          git config user.name "$(git log -n 1 --pretty=format:%an)"
-          git config user.email "$(git log -n 1 --pretty=format:%ae)"
+  #     # Section to actually create a release
+  #     - name: Set up git
+  #       run: |
+  #         git config user.name "$(git log -n 1 --pretty=format:%an)"
+  #         git config user.email "$(git log -n 1 --pretty=format:%ae)"
 
-      - name: Create tag
-        uses: rickstaa/action-create-tag@v1
-        id: tag_create
-        with:
-          tag: ${{ needs.Date.outputs.Date }}
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          tag_exists_error: false
-          message: "Release for ${{ needs.Date.outputs.Date }} run"
+  #     - name: Create tag
+  #       uses: rickstaa/action-create-tag@v1
+  #       id: tag_create
+  #       with:
+  #         tag: ${{ needs.Date.outputs.Date }}-Full
+  #         github_token: ${{secrets.GITHUB_TOKEN}}
+  #         tag_exists_error: false
+  #         message: "Release for ${{ needs.Date.outputs.Date }} Full run"
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
-          tag_name: ${{ needs.Date.outputs.Date }}
-          make_latest: true
-          files: |
-            *.iso.*
+  #     - name: Create Release
+  #       id: create_release
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         name: ${{ vars.COLLECTOR }}-Full ${{ needs.Date.outputs.Date }}
+  #         tag_name: ${{ needs.Date.outputs.Date }}-Full
+  #         make_latest: true
+  #         files: |
+  #           /mnt/*.iso.*
+
