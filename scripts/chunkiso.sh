@@ -29,7 +29,7 @@ for chunk in $chunkfiles/$REPO_NAME-*; do
     echo "Adding chunk: $chunk"
     
     if (( chunk_count > chunks_per_iso )); then
-        echo "ISO file chunk limit reached ($(du -1Ssh $ISO_FILE)). Closing ISO file."
+        echo "ISO file chunk limit reached ($(df -1Ssh $ISO_FILE)). Closing ISO file."
         # mkisofs -M "$ISO_FILE" -- outdev "$ISO_FILE" -commit
         echo "Implanting MD5"
         implantisomd5 "$ISO_FILE"
@@ -49,7 +49,7 @@ for chunk in $chunkfiles/$REPO_NAME-*; do
     rm -f $(cat $chunk)
     echo -e "Free Disk Space: $(df -h . | awk 'NR==2 {print $4}')"
     chunk_count=$((chunk_count + 1))
-    echo -e "Current iso size ($(du -1Ssh $ISO_FILE)).  Next Chunk $chunk_count."
+    echo -e "Current iso size ($(df -1Ssh $ISO_FILE)).  Next Chunk $chunk_count."
 done
 
 # Close out final ISO file
