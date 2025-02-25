@@ -53,7 +53,7 @@ for chunk in $chunkfiles/$REPO_NAME-*; do
 done
 
 # Close out final ISO file
-echo "Implanting MD5"
+echo -e "\nImplanting MD5"
 implantisomd5 "$ISO_FILE"
-echo "Calculating SHA256"
+echo -e "\nCalculating SHA256"
 sha256sum -b "$ISO_FILE" | tee "$ISO_FILE.sha"
