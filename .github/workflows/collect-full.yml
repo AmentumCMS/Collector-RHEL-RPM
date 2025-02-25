@@ -37,7 +37,7 @@ jobs:
         max-parallel: 1
         matrix:
             os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -68,7 +68,7 @@ jobs:
         run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
 
       - name: Register system and install packages
-        run: registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
+        run: ./scripts/registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
 
       - name: Set Dynamic Repo Names
         id: set_repo
@@ -138,14 +138,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
           if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
@@ -168,9 +168,9 @@ jobs:
           echo "Remove ${{ env.REPO }}"
           rm -rf ${{ env.REPO }}
           echo "Remove Artifacts"
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.txt
           echo "Done"
 
   Release:
