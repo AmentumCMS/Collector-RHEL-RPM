@@ -1,4 +1,5 @@
 #!/bin/bash
+set +e
 # Arguments
 REPO_NAME=$1
 DATE=$2

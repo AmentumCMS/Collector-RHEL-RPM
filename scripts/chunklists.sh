@@ -44,6 +44,6 @@ while read -r file; do
         add_to_group "$file" "$file_size"
     fi
 done < <(find $REPO_NAME -type f)
-echo "Group list $group_number.txt created"
+echo "Group list $REPO_NAME-$group_number.txt created"
 
 echo -e "\n$(ls -1 $chunkfiles|wc -l) group list files in $chunkfiles directory."
