@@ -129,7 +129,7 @@ jobs:
       - name: Make ${{ env.REPO }} ISO
         run: |
           echo "Making ISOs of ${{ env.REPO }}"
-          ./reposplit.sh ${{ env.REPO }} ${{ matrix.os }} ${{ needs.Date.outputs.Date }}
+          chunkiso.sh ${{ env.REPO }} ${{ needs.Date.outputs.Date }}
 
       - name: Show ISO & Hash
         run: ls -sS1h ${{ env.WORKDIR }}/*.iso*

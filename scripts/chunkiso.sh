@@ -1,4 +1,7 @@
 #!/bin/bash
+# Arguments
+REPO_NAME=$1
+DATE=$2
 
 # Initialize variables
 iso_count=1
@@ -6,8 +9,7 @@ chunk_count=1
 current_iso_size=0
 
 # Variables
-REPO_NAME=$1
-ISO_FILE="$REPO_NAME-$iso_count.iso"
+ISO_FILE="$REPO_NAME-$DATE-$iso_count.iso"
 chunks_per_iso=12
 export chunkfiles="chunks"
 
@@ -19,7 +21,7 @@ chunklists.sh "$REPO_NAME"
 
 # Create ISO files with the chunk file lists
 echo -e "\nCreating blank ISO file $ISO_FILE."
-mkisofs -o "$ISO_FILE" -J -R  # Create an empty ISO to start with
+mkisofs -o "$ISO_FILE" -J -R $chunkfiles/$REPO_NAME-*1* # Create an empty ISO to start with
 echo
 
 for chunk in $chunkfiles/$REPO_NAME-*; do
@@ -35,14 +37,15 @@ for chunk in $chunkfiles/$REPO_NAME-*; do
         iso_count=$((iso_count + 1))
         current_iso_size=0
         chunk_count=1
-        ISO_FILE="$REPO_NAME-$iso_count.iso"
+        ISO_FILE="$REPO_NAME-$DATE-$iso_count.iso"
         echo -e "\nCreating next ISO file $ISO_FILE."
-        mkisofs -o "$ISO_FILE" -J -R # Create a new empty ISO increment
+        mkisofs -o "$ISO_FILE" -J -R $chunk # Create a new empty ISO increment
     fi
 
     echo -e "Adding $chunk to $ISO_FILE"
     mkisofs -M $ISO_FILE -- outdev $ISO_FILE -add $(cat $chunk)
-    rm -fv $(cat $chunk)
+    echo -e "Deleting $chunk files"
+    rm -f $(cat $chunk)
     echo -e "Free Disk Space: $(df -h . | awk 'NR==2 {print $4}')"
     current_iso_size=$((current_iso_size) + (stat -c%s "$ISO_FILE"))
     chunk_count=$((chunk_count + 1))
