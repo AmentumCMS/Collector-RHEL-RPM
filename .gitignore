@@ -10,6 +10,8 @@ coverage/
 docs/
 .yarn/cache
 output/
+**/*group*/
+**/*chunk*/
 
 # Ignore Repositories
 **/rhel-*-for-x86_64-*-rpms/

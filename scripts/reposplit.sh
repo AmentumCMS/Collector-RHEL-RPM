@@ -2,7 +2,7 @@
 
 # Variables
 CHUNK_SIZE=8000M  # DVD-DL size
-ISO_SIZE=50000M   # BD-DL size
+ISO_SIZE=100000M   # BD-XL size
 OUTPUT_DIR="/mnt/output"
 ISO_DIR="$OUTPUT_DIR/iso_files"
 REPO_NAME=$1
@@ -19,7 +19,7 @@ mkdir -p "$OUTPUT_DIR/$REPO_NAME"
 # Compress the data into tar.gz chunks and create ISO files
 cd "$OUTPUT_DIR/$REPO_NAME"
 echo -e "\nCreating ISO file #$iso_file."
-mkisofs -o "$iso_file" -J -R /dev/null  # Create an empty ISO to start with
+mkisofs -o "$iso_file" -J -R   # Create an empty ISO to start with
 find . -type f | split -b "$CHUNK_SIZE" -d -a 3 - "$REPO_NAME-" # Calculate chunks
 
 echo -e "Chunks required: $(ls -1q $REPO_NAME-* | wc -l)\n$(ls -1 $REPO_NAME-*)\n$(ls -1q $REPO_NAME-*)"
@@ -44,7 +44,7 @@ for chunk in $REPO_NAME-*; do
         chunk_count=1
         iso_file="$ISO_DIR/$REPO_NAME-$2-$iso_count.iso"
         echo -e "\nCreating next ISO file $iso_file."
-        mkisofs -o "$iso_file" -J -R /dev/null  # Create a new empty ISO increment
+        mkisofs -o "$iso_file" -J -R # Create a new empty ISO increment
     fi
 
     echo -e "Adding $tar_chunk to $iso_file"
