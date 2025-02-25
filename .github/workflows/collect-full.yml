@@ -36,7 +36,7 @@ jobs:
     needs: [Date]
     runs-on: linux-300G
     strategy:
-        max-parallel: 3
+        max-parallel: 1
         matrix:
             os: [8, 9]
             repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
@@ -93,13 +93,13 @@ jobs:
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
           reposync-all.sh ${{ env.REPO }}
-          ls *.log
+          echo "Logfile: $(ls -1Ssh *.log)"
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
+          path: ${{ env.REPO }}-${{ needs.Date.outputs.Date }}.log
           if-no-files-found: error
 
       - name: Unregister system
