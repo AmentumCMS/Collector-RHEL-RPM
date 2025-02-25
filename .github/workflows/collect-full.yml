@@ -34,7 +34,7 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: linux-150G
+    runs-on: linux-300G
     strategy:
         max-parallel: 1
         matrix:
@@ -116,7 +116,7 @@ jobs:
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
-      - name: ISO Table of contents
+      - name: Repo Table of contents
         run: |
           cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
