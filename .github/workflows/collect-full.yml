@@ -36,7 +36,7 @@ jobs:
     needs: [Date]
     runs-on: linux-300G
     strategy:
-        max-parallel: 1
+        max-parallel: 3
         matrix:
             os: [8, 9]
             repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
@@ -44,9 +44,8 @@ jobs:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
-        WORKDIR: /mnt
       volumes:
-        - /mnt:/mnt
+        - $PWD:/mnt
       # credentials:
       #   username: ${{ secrets.REGISTRY_USER }}
       #   password: ${{ secrets.REGISTRY_TOKEN }}
@@ -64,7 +63,7 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h ${{ env.WORKDIR }}
+        run: df -h 
 
       - name: Setup Path
         run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
@@ -92,7 +91,6 @@ jobs:
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
-          cd ${{ env.WORKDIR }}
           echo "Collecting repo ${{ env.REPO }} RPMs"
           reposync-all.sh ${{ env.REPO }}
           ls *.log
@@ -101,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}.log
+          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -109,16 +107,15 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
+          echo -e "Disk Usage $(du -chs ${{ env.REPO }})\n"
+          echo -e "Disk Space $(df -h )"
 
 
       # - name: Copy README to ${{ env.REPO }} ISO
-      #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
+      #   run: cp -v README.md ${{ env.REPO }}/
 
       - name: Repo Table of contents
         run: |
-          cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
@@ -126,7 +123,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ env.REPO }} ISO
@@ -135,26 +132,26 @@ jobs:
           chunkiso.sh ${{ env.REPO }} ${{ needs.Date.outputs.Date }}
 
       - name: Show ISO & Hash
-        run: ls -sS1h ${{ env.WORKDIR }}/*.iso*
+        run: ls -sS1h *.iso*
 
       - name: Upload ISO SHA artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
+          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
           if-no-files-found: error
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "${{ env.WORKDIR }}/*.iso*"
+          file_path: "*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
           upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
