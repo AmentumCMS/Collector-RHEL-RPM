@@ -137,15 +137,9 @@ jobs:
       - name: Upload ISO SHA artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
-          if-no-files-found: error
-
-      - name: Upload ISO
-        uses: actions/upload-artifact@v4
-        with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          path: *.sha
+          if-no-files-found: error
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
