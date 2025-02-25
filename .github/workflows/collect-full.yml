@@ -36,7 +36,7 @@ jobs:
     needs: [Date]
     runs-on: linux-300G
     strategy:
-        max-parallel: 1
+        max-parallel: 2
         matrix:
             os: [8, 9]
             repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
