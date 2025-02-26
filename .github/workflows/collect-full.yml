@@ -1,11 +1,6 @@
 name: RHEL-RPM-Collection (Full)
 run-name: ${{ github.actor }} is Collecting All the RPMS 🚀
 on:
-  push:
-    branches:
-      - full
-  schedule:
-    - cron: "0 0 1 1,4,7,10 *" # Update Quarterly on the 1st
   workflow_dispatch:
 
 jobs:
@@ -29,6 +24,8 @@ jobs:
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
+          echo -e "\nPermissions on /mnt"
+          ls -alht /mnt
 
   Collect-RPMs:
     needs: [Date]
@@ -36,16 +33,14 @@ jobs:
     strategy:
         max-parallel: 1
         matrix:
-            os: [8]
-            # os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-appstream-rpms]
-            # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
+            os: [8, 9]
+            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
-      volumes:
-        - /mnt:/mnt
+      # volumes:
+      #   - $PWD:/mnt
       # credentials:
       #   username: ${{ secrets.REGISTRY_USER }}
       #   password: ${{ secrets.REGISTRY_TOKEN }}
@@ -63,17 +58,15 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h /mnt
+        run: df -h 
 
-      - name: Register system and install packages
+      - name: Setup Environment
         run: |
-          rm /etc/rhsm-host
-          subscription-manager register --username '${{ secrets.RHDN_USER }}' --password '${{ secrets.RHDN_PASS }}'
-          dnf install -y dnf-plugins-core yum-utils mkisofs isomd5sum tree procps-ng
-          echo "Registering epel Repo"
-          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${{ matrix.os }}.noarch.rpm
-          echo "Registering docker-ce-stable Repo"
-          dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+          echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+          echo "WORKDIR=/mnt" >> $GITHUB_ENV
+          
+      - name: Register system and install packages
+        run: ./scripts/registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
 
       - name: Set Dynamic Repo Names
         id: set_repo
@@ -96,8 +89,8 @@ jobs:
       - name: Run Collection for ${{ env.REPO }}
         run: |
           echo "Collecting repo ${{ env.REPO }} RPMs"
-          ./reposplit.sh ${{ env.REPO }}
-          ls *.log
+          reposync-all.sh ${{ env.REPO }}
+          echo "Logfile: $(ls -1Ssh *.log)"
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
@@ -111,15 +104,15 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs /mnt/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h /mnt/)"
+          echo -e "Disk Usage $(du -chs ${{ env.REPO }})\n"
+          echo -e "Disk Space $(df -h )"
+
 
       # - name: Copy README to ${{ env.REPO }} ISO
-      #   run: cp -v README.md /mnt/${{ env.REPO }}/
+      #   run: cp -v README.md ${{ env.REPO }}/
 
-      - name: ISO Table of contents
+      - name: Repo Table of contents
         run: |
-          cd /mnt
           tree ${{ env.REPO }} \
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
@@ -127,145 +120,29 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: /mnt/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ env.REPO }} ISO
         run: |
-          echo "Making ISO of ${{ env.REPO }}"
-          mkisofs -r -v -l \
-            -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
-            -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
-            -o /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
-            /mnt/${{ env.REPO }}
-
-      - name: Implant MD5 sum into ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-
-      - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
-        run: |
-          sha256sum -b /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          echo "Making ISOs of ${{ env.REPO }}"
+          chunkiso.sh ${{ env.REPO }} ${{ needs.Date.outputs.Date }}
 
       - name: Show ISO & Hash
-        run: ls -sS1h /mnt/*.iso*
+        run: ls -sS1h *.iso*
 
-      - name: Upload ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          if-no-files-found: error
-
-      - name: Upload ISO Hash
+      - name: Upload ISO SHA artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-
-      # Cleanup
-      - name: Clean up
-        run: |
-          echo "Remove ${{ env.REPO }}"
-          rm -rf /mnt/${{ env.REPO }}
-          echo "Remove Artifacts"
-          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          echo "Done"
-
-  Release:
-    runs-on: ubuntu-24.04
-    needs: [Date, Collect-RPMs]
-    permissions:
-      contents: write
-      pull-requests: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          pattern: "*.iso.*"
-
-      - name: Show Artifacts
-        run: ls -sS1h *.iso.*
-
-      # Section to actually create a release
-      - name: Set up git
-        run: |
-          git config user.name "$(git log -n 1 --pretty=format:%an)"
-          git config user.email "$(git log -n 1 --pretty=format:%ae)"
-
-      - name: Create tag
-        uses: rickstaa/action-create-tag@v1
-        id: tag_create
-        with:
-          tag: ${{ needs.Date.outputs.Date }}
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          tag_exists_error: false
-          message: "Release for ${{ needs.Date.outputs.Date }} run"
-
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ vars.COLLECTOR }} ${{ needs.Date.outputs.Date }}
-          tag_name: ${{ needs.Date.outputs.Date }}
-          make_latest: true
-          files: |
-            *.iso.*
-  # Upload to Sharepoint Job
-  Sharepoint:
-    runs-on: ubuntu-24.04
-    needs: [Date, Collect-RPMs]
-    strategy:
-      matrix:
-          os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
-    permissions:
-      contents: write
-      pull-requests: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Set Dynamic Repo Names
-        id: set_repo
-        run: |
-          export REPO=${{ matrix.repo }}
-          REPO=${REPO/matrix/${{ matrix.os }}}
-          echo -e "\nWorking on repo $REPO\n"
-          echo "REPO=$REPO" >> $GITHUB_ENV
-          echo "Build short repo name"
-          case $REPO in
-            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
-            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
-            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
-            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
-            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
-          esac
-          echo "SHORT_REPO=$SHORT_REPO"
-          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
-          
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
-          path: /mnt/upload
-
-      - name: List Artifacts
-        run: ls -1sSh /mnt/upload
+          path: "*.sha"
+          if-no-files-found: error
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "/mnt/upload/*.iso*"
+          file_path: "*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
           upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
@@ -274,3 +151,62 @@ jobs:
           client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
           login_endpoint: "login.microsoftonline.us"
           graph_endpoint: "graph.microsoft.us"
+
+      # Cleanup
+      - name: Clean up
+        run: |
+          cd ${{ env.WORKDIR }}
+          echo "Remove ${{ env.REPO }}"
+          rm -rf ${{ env.REPO }}
+          echo "Remove Artifacts"
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.txt
+          echo "Done"
+
+  # Release:
+  #   runs-on: ubuntu-24.04
+  #   needs: [Date, Collect-RPMs]
+  #   permissions:
+  #     contents: write
+  #     pull-requests: read
+  #   env:
+  #     GH_TOKEN: ${{ github.token }}
+  #   steps:
+  #     - name: Check out repository code
+  #       uses: actions/checkout@v4
+
+  #     - name: Download Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         merge-multiple: true
+  #         pattern: "*.iso.*"
+
+  #     - name: Show Artifacts
+  #       run: ls -sS1h *.iso.*
+
+  #     # Section to actually create a release
+  #     - name: Set up git
+  #       run: |
+  #         git config user.name "$(git log -n 1 --pretty=format:%an)"
+  #         git config user.email "$(git log -n 1 --pretty=format:%ae)"
+
+  #     - name: Create tag
+  #       uses: rickstaa/action-create-tag@v1
+  #       id: tag_create
+  #       with:
+  #         tag: ${{ needs.Date.outputs.Date }}-Full
+  #         github_token: ${{secrets.GITHUB_TOKEN}}
+  #         tag_exists_error: false
+  #         message: "Release for ${{ needs.Date.outputs.Date }} Full run"
+
+  #     - name: Create Release
+  #       id: create_release
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         name: ${{ vars.COLLECTOR }}-Full ${{ needs.Date.outputs.Date }}
+  #         tag_name: ${{ needs.Date.outputs.Date }}-Full
+  #         make_latest: true
+  #         files: |
+  #           /mnt/*.iso.*
+
