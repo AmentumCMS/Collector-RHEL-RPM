@@ -51,11 +51,11 @@ Vagrant.configure("2") do |config|
   ############################################################################
   config.vm.provision "shell", 
     env: {
-      RHDN_USER:ENV['RHDN_USER'],
-      RHDN_PASS:ENV['RHDN_PASS'],
-      RHDN_ACTIVATION_KEY:ENV['RHDN_ACTIVATION_KEY']
+      RHDN_USER: ENV['RHDN_USER'],
+      RHDN_PASS: ENV['RHDN_PASS']
     },
   inline: <<-'SHELL'
+    # env|grep RHDN
     # Import .ssh to vagrant user
     chown -R vagrant:vagrant /home/vagrant
     chmod -R 600 /home/vagrant/.ssh
@@ -73,10 +73,12 @@ Vagrant.configure("2") do |config|
     ############################################################################
     # Add Software                                                             #
     ############################################################################
-    if [ -z "$RHDN_ACTIVATION_KEY" ]; then
-      echo "RHDN_ACTIVATION_KEY undefined, will not be attached"
+    if [ -z $RHDN_USER ] && [ -z  $RHDN_PASS ]; then
+      echo "RHDN Credentials undefined, will not be attached"
     else
-      echo "RHDN_ACTIVATION_KEY detected, attaching to RHDN"
+      echo "RHDN Credentials detected, attaching to RHDN"
+      env|grep RHDN
+
       subscription-manager register \
         --username ${RHDN_USER} \
         --password ${RHDN_PASS} \
@@ -88,6 +90,8 @@ Vagrant.configure("2") do |config|
       curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo >\
         "/etc/yum.repos.d/github-cli.repo"
       echo
+      echo "Registering docker-ce-stable Repo"
+      dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
       /usr/bin/crb enable
       
       # Install Dev Software
