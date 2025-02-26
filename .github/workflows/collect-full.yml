@@ -1,11 +1,6 @@
 name: RHEL-RPM-Collection (Full)
 run-name: ${{ github.actor }} is Collecting All the RPMS 🚀
 on:
-  push:
-    branches:
-      - full
-  schedule:
-    - cron: "0 0 1 1,4,7,10 *" # Update Quarterly on the 1st
   workflow_dispatch:
 
 jobs:
