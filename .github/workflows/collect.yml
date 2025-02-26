@@ -273,7 +273,7 @@ jobs:
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-        uses: cringdahl/sharepoint-file-upload-action@v1.3.0
+        uses: amentumcms/sharepoint-file-upload-action@main
         with:
           file_path: "/mnt/upload/*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
