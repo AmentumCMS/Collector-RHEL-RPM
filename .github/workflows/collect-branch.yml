@@ -67,8 +67,10 @@ jobs:
       - name: List disks
         run: df -h ${{ env.WORKDIR }}
 
-      - name: Setup Path
-        run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+      - name: Setup Environment
+        run: |
+          echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+          echo "WORKDIR=/mnt" >> $GITHUB_ENV
 
       - name: Register system and install packages
         run: registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
@@ -102,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}.log
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system

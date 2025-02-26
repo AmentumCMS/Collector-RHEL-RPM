@@ -60,9 +60,11 @@ jobs:
       - name: List disks
         run: df -h 
 
-      - name: Setup Path
-        run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
-
+      - name: Setup Environment
+        run: |
+          echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+          echo "WORKDIR=/mnt" >> $GITHUB_ENV
+          
       - name: Register system and install packages
         run: ./scripts/registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
 
