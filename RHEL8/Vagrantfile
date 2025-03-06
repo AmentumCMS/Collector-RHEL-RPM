@@ -136,19 +136,19 @@ Vagrant.configure("2") do |config|
     REPOSYNC: ENV['REPOSYNC']
   }, inline: <<-'SHELL'
     # REPOSYNC=false
+    mount -a && cd /vagrant
     if [[ -z $RHDN_USER ]] && [[ -z $RHDN_PASS ]] && [[ -z $REPOSYNC ]] && [[ ! $REPOSYNC = "true" ]]; then
       echo -e "\nRHDN Credentials not attached or REPOSYNC=$REPOSYNC"
     else
       echo -e "\nRHDN Credentials attached and REPOSYNC=$REPOSYNC"
       echo -e "\nCollecting RHEL9 BaseOS\n"
-      reposync -p /vagrant --download-metadata --repo=rhel-8-for-x86_64-baseos-rpms
+      reposync.sh -p /vagrant --download-metadata --repo=rhel-8-for-x86_64-baseos-rpms
       echo -e "\nCollecting RHEL9 Appstream\n"
-      reposync -p /vagrant --download-metadata --repo=rhel-8-for-x86_64-appstream-rpms 
+      reposync.sh -p /vagrant --download-metadata --repo=rhel-8-for-x86_64-appstream-rpms 
       echo -e "\nCollecting RHEL9 CodeReady Builder\n"
-      reposync -p /vagrant --download-metadata --repo=codeready-builder-for-rhel-8-x86_64-rpms
+      reposync.sh -p /vagrant --download-metadata --repo=codeready-builder-for-rhel-8-x86_64-rpms
       echo -e "\nCollecting EPEL\n"
-      reposync -p /vagrant --download-metadata --repo=epel
+      reposync.sh -p /vagrant --download-metadata --repo=epel
     fi
-    mount -a
   SHELL
 end
