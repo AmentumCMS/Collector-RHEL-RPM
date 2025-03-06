@@ -3,7 +3,7 @@ set +e
 REPO_NAME=$1
 
 # Set the size limit in GB
-LIMIT_GB=8
+LIMIT_GB=100
 LIMIT_BYTES=$((LIMIT_GB * 1024 * 1024 * 1024))
 
 # Initialize variables
