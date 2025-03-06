@@ -26,5 +26,6 @@ output/
 *.zip
 *.bundle
 *.iso
+*.sha
 *.log
 desktop.ini
