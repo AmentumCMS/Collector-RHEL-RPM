@@ -239,7 +239,7 @@ jobs:
         run: |
           mkdir -p mnt
           chmod 777 mnt
-          echo -e "\nFile Listing\n$(ls -alht mnt)
+          echo -e "\nFile Listing\n$(ls -alht mnt)"
 
           sudo mount /dev/sda1 mnt
           echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
