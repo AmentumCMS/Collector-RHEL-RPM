@@ -240,32 +240,13 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Set Dynamic Repo Names
-        id: set_repo
-        run: |
-          export REPO=${{ matrix.repo }}
-          REPO=${REPO/matrix/${{ matrix.os }}}
-          echo -e "\nWorking on repo $REPO\n"
-          echo "REPO=$REPO" >> $GITHUB_ENV
-          echo "Build short repo name"
-          case $REPO in
-            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
-            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
-            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
-            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
-            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
-          esac
-          echo "SHORT_REPO=$SHORT_REPO"
-          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
-
-      - name: Create upload directory
+      - name: Setup upload directory
         run: |
           echo "Create mnt directory and bindmount"
           echo -e "\nUser ID:\n$(id)"
           mkdir -p mnt
           sudo mount --bind -o umask=022,gid=118,uid=1001 /mnt mnt
-          echo -e "\nFile Listing\n$(ls -alht mnt)"
-          # sudo chown -R runner:docker mnt
+          sudo chown -R runner:docker /mnt
           # echo -e "\nFile Listing\n$(ls -alht mnt)"
             
       - name: Download Artifacts
