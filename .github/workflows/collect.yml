@@ -259,7 +259,7 @@ jobs:
 
       - name: Create upload directory
         run: |
-          mkdir -p mnt
+          # mkdir -p mnt
           chmod 777 mnt
           echo -e "\nFile Listing\n$(ls -alht mnt)"
 
