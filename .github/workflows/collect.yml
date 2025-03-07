@@ -263,7 +263,8 @@ jobs:
           chmod 777 mnt
           echo -e "\nFile Listing\n$(ls -alht mnt)"
 
-          sudo mount /dev/sda1 mnt
+          # sudo mount -o rw,remount /dev/sda1 mnt
+          ln -s /mnt mnt
           echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
           echo -e "\nFile Listing\n$(ls -1sSh mnt)"
             
