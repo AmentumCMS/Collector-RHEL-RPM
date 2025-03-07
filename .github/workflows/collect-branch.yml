@@ -256,6 +256,7 @@ jobs:
       - name: List Artifacts
         run: |
           echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
-          echo -e "\nFile Listing:\n$(ls -1sSh mnt/*.iso*"
+          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
+          echo -e "\nFile Listing:\n$(ls -1sSh mnt/*.iso*)"
 
       # Send Artifacts to Sharepoint
