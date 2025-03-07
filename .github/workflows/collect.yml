@@ -264,8 +264,8 @@ jobs:
           echo -e "\nFile Listing\n$(ls -alht mnt)
 
           sudo mount /dev/sda1 mnt
-          echo -e "\nDisk mounts:\n$(df -h)"
-          echo -e "\nFile Listing\n$(ls -alht mnt)
+          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
+          echo -e "\nFile Listing\n$(ls -1sSh mnt)"
             
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -275,7 +275,9 @@ jobs:
           path: mnt
 
       - name: List Artifacts
-        run: ls -1sSh mnt/*.iso*
+        run: |
+          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
+          echo -e "\nFile Listing:\n$(ls -1sSh mnt/*.iso*"
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
