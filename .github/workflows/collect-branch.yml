@@ -41,8 +41,7 @@ jobs:
         # max-parallel: 1
         matrix:
           os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, docker-ce-stable]
-          # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -210,8 +209,7 @@ jobs:
     strategy:
       matrix:
           os: [8, 9]
-          # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, docker-ce-stable]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
     permissions:
       contents: write
       pull-requests: read
