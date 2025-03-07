@@ -262,7 +262,8 @@ jobs:
           mkdir -p mnt
           chmod 777 mnt
           sudo mount -o remount,rw /dev/sda1 mnt
-          ls -alht /mnt
+          echo -e "\nDisk mounts:\n$(df -h)"
+          echo -e "\nFile Listing\n$(ls -alht mnt)
             
       - name: Download Artifacts
         uses: actions/download-artifact@v4
