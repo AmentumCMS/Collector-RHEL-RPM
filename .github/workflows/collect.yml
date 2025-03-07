@@ -259,13 +259,12 @@ jobs:
 
       - name: Create upload directory
         run: |
+          echo "Create mnt directory and bindmount"
           mkdir -p mnt
-          chmod 777 mnt
-          echo -e "\nFile Listing\n$(ls -alht mnt)"
-
           sudo mount --bind /mnt mnt
-          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
-          echo -e "\nFile Listing\n$(ls -1sSh mnt)"
+          echo -e "\nFile Listing\n$(ls -alht mnt)"
+          sudo chmod 777 mnt
+          echo -e "\nFile Listing\n$(ls -alht mnt)"
             
       - name: Download Artifacts
         uses: actions/download-artifact@v4
