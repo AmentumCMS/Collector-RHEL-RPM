@@ -218,7 +218,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Set Dynamic Repo Names
+      - name: Set Repo Names
         id: set_repo
         run: |
           export REPO=${{ matrix.repo }}
