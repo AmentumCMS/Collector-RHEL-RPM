@@ -40,7 +40,7 @@ jobs:
         # max-parallel: 1
         matrix:
           os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, docker-ce-stable]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, docker-ce-stable]
           # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
@@ -210,7 +210,7 @@ jobs:
       matrix:
           os: [8, 9]
           # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, docker-ce-stable]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, docker-ce-stable]
     permissions:
       contents: write
       pull-requests: read
@@ -241,8 +241,7 @@ jobs:
           chmod 777 mnt
           echo -e "\nFile Listing\n$(ls -alht mnt)"
 
-          sudo mount -o rw,remount /dev/sda1 mnt
-          # ln -vs /mnt mnt
+          sudo mount --bind /mnt mnt
           echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
           echo -e "\nFile Listing\n$(ls -1sSh mnt)"
             
