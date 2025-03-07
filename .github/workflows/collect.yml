@@ -136,7 +136,7 @@ jobs:
         run: |
           cd ${{ env.WORKDIR }}
           echo "Making ISO of ${{ env.REPO }}"
-          mkisofs -r -v -l \
+          mkisofs -J -R -v -T -l \
             -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -o ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
@@ -259,25 +259,26 @@ jobs:
 
       - name: Create upload directory
         run: |
-          sudo mkdir -p /mnt/upload
-          sudo chmod 777 /mnt/upload
-          ls -alht /mnt/upload
-
+          mkdir -p mnt
+          chmod 777 mnt
+          sudo mount -o remount,rw /dev/sda1 mnt
+          ls -alht /mnt
+            
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
           pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
-          path: /mnt/upload
+          path: mnt
 
       - name: List Artifacts
-        run: ls -1sSh /mnt/upload/*.iso*
+        run: ls -1sSh mnt/*.iso*
 
       # Send Artifacts to Sharepoint
       - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "/mnt/upload/*.iso*"
+          file_path: "mnt/*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
           upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"

@@ -22,7 +22,7 @@ chunklists.sh "$REPO_NAME"
 
 # Create ISO files with the chunk file lists
 echo -e "\nCreating blank ISO file $ISO_FILE."
-mkisofs -o "$ISO_FILE" -J -R $chunkfiles/$REPO_NAME-*1* $REPO_NAME*.txt # Create an empty ISO to start with
+mkisofs -J -R -v -T -l -o "$ISO_FILE" $chunkfiles/$REPO_NAME-*1* $REPO_NAME*.txt # Create an empty ISO to start with
 echo
 
 for chunk in $chunkfiles/$REPO_NAME-*; do
@@ -40,7 +40,7 @@ for chunk in $chunkfiles/$REPO_NAME-*; do
         chunk_count=1
         ISO_FILE="$REPO_NAME-$DATE-$iso_count.iso"
         echo -e "\nCreating next ISO file $ISO_FILE."
-        mkisofs -o "$ISO_FILE" -J -R $chunk $REPO_NAME*.txt # Create a new empty ISO increment
+        mkisofs -J -R -v -T -l -o "$ISO_FILE" $chunk $REPO_NAME*.txt # Create a new empty ISO increment
     fi
 
     echo -e "Adding $chunk to $ISO_FILE"

@@ -84,7 +84,7 @@ Vagrant.configure("2") do |config|
       echo -e "\nRHDN Credentials undefined, will not be attached"
     else
       echo -e "\nRHDN Credentials detected, attaching to RHDN"
-
+      env
       subscription-manager register \
         --username ${RHDN_USER} \
         --password ${RHDN_PASS} \
