@@ -34,6 +34,14 @@ jobs:
           echo -e "\nPermissions on /mnt"
           ls -alht /mnt
 
+      - name: Get Info
+        id: info
+        run: |
+          echo -e "\nUser ID:\n$(id)"
+          echo -e "\nUser Info:\n$(whoami)"
+          echo -e "\nPasswd info:\n$(cat /etc/passwd|grep runner)"
+          echo -e "\nGroups info:\n$(cat /etc/groups|grep docker)"
+
   Collect-RPMs:
     needs: [Date]
     runs-on: ubuntu-24.04
@@ -256,6 +264,14 @@ jobs:
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
+
+      - name: Get Info
+        id: info
+        run: |
+          echo -e "\nUser ID:\n$(id)"
+          echo -e "\nUser Info:\n$(whoami)"
+          echo -e "\nPasswd info:\n$(cat /etc/passwd|grep runner)"
+          echo -e "\nGroups info:\n$(cat /etc/groups|grep docker)"
 
       - name: Create upload directory
         run: |
