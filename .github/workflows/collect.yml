@@ -264,7 +264,7 @@ jobs:
           echo -e "\nFile Listing\n$(ls -alht mnt)"
 
           # sudo mount -o rw,remount /dev/sda1 mnt
-          ln -s /mnt mnt
+          ln -vs /mnt mnt
           echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
           echo -e "\nFile Listing\n$(ls -1sSh mnt)"
             
@@ -277,7 +277,6 @@ jobs:
 
       - name: List Artifacts
         run: |
-          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
           echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
           echo -e "\nFile Listing:\n$(ls -1sSh mnt/*.iso*)"
 
