@@ -218,6 +218,14 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Set Repo Names
+        id: set_repo
+        run: |
+          export REPO=${{ matrix.repo }}
+          REPO=${REPO/matrix/${{ matrix.os }}}
+          echo -e "\nWorking on repo $REPO\n"
+          echo "REPO=$REPO" >> $GITHUB_ENV
+          
       - name: Setup upload directory
         run: |
           echo "Create mnt directory and bindmount"
