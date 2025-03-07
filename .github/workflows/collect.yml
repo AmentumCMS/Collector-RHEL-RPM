@@ -265,8 +265,8 @@ jobs:
           mkdir -p mnt
           sudo mount --bind -o umask=022,gid=118,uid=1001 /mnt mnt
           echo -e "\nFile Listing\n$(ls -alht mnt)"
-          sudo chown -R runner:docker mnt
-          echo -e "\nFile Listing\n$(ls -alht mnt)"
+          # sudo chown -R runner:docker mnt
+          # echo -e "\nFile Listing\n$(ls -alht mnt)"
             
       - name: Download Artifacts
         uses: actions/download-artifact@v4
