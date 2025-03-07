@@ -232,8 +232,7 @@ jobs:
     strategy:
       matrix:
           os: [8, 9]
-          # repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
-          repo: [docker-ce-stable, hashicorp]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
     permissions:
       contents: write
       pull-requests: read
