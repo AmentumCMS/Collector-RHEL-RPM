@@ -29,7 +29,7 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: linux-300G
+    runs-on: self-hosted
     strategy:
         max-parallel: 1
         matrix:
