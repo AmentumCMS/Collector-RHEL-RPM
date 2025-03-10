@@ -13,6 +13,7 @@ Vagrant.configure("2") do |config|
   config.vm.hostname = "reposync-RHEL8"
 
   # config.vagrant.plugins = ["vagrant-vbguest","vagrant-persistent-storage"]
+  config.vagrant.plugins = ["vagrant-vbguest"]
   config.vbguest.auto_update = false
   config.ssh.key_type = :ecdsa521 # Requires Vagrant 2.4.1
 
@@ -31,6 +32,7 @@ Vagrant.configure("2") do |config|
     vb.memory = 8192
     
     # Set up VM options
+    vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
     vb.customize ["modifyvm", :id, "--vm-process-priority", "normal"]
     vb.customize ["modifyvm", :id, "--clipboard-mode", "bidirectional"]
     vb.customize ["modifyvm", :id, "--usbxhci", "on"]
@@ -44,6 +46,9 @@ Vagrant.configure("2") do |config|
   ############################################################################
   config.vm.provision "file", source: "~/.ssh", destination: ".ssh"
   config.vm.provision "file", source: "~/.gitconfig", destination: ".gitconfig"
+  config.vm.provision "file", source: "../scripts", destination: "scripts"
+  config.vm.provision "file", source: "../tanzu-cli.repo", destination: "tanzu-cli.repo"
+
   config.vm.synced_folder ".", "/vagrant", disabled: false
 
   ############################################################################
@@ -52,16 +57,22 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", 
     env: {
       RHDN_USER: ENV['RHDN_USER'],
-      RHDN_PASS: ENV['RHDN_PASS']
-    },
-  inline: <<-'SHELL'
+      RHDN_PASS: ENV['RHDN_PASS'],
+    }, reboot: true, inline: <<-'SHELL'
     # env|grep RHDN
     # Import .ssh to vagrant user
+    echo "Setting up Vagrant User SSH"
+    cat /home/vagrant/.ssh/*.pub | tee -a /home/vagrant/authorized_keys
     chown -R vagrant:vagrant /home/vagrant
     chmod -R 600 /home/vagrant/.ssh
     chmod 700 /home/vagrant/.ssh
 
+    echo -e "\nCopying scripts to /usr/local/bin"
+    cp -rv /home/vagrant/scripts/* /usr/local/bin/
+    chmod a+x /usr/local/bin/*
+
     # Setup Rootless Podman
+    echo -e "\nSetting up Rootless Podman"
     sysctl user.max_user_namespaces=15000
     sed -i 's/user.max_user_namespaces=0/user.max_user_namespaces=15000/i' /etc/sysctl.conf
     usermod --add-subuids 200000-201000 --add-subgids 200000-201000 vagrant
@@ -73,64 +84,73 @@ Vagrant.configure("2") do |config|
     ############################################################################
     # Add Software                                                             #
     ############################################################################
-    if [ -z $RHDN_USER ] && [ -z  $RHDN_PASS ]; then
-      echo "RHDN Credentials undefined, will not be attached"
+    if [[ -z $RHDN_USER ]] && [[ -z $RHDN_PASS ]]; then
+      echo -e "\nRHDN Credentials undefined, will not be attached"
     else
-      echo "RHDN Credentials detected, attaching to RHDN"
-      env|grep RHDN
-
+      echo -e "\nRHDN Credentials detected, attaching to RHDN"
       subscription-manager register \
         --username ${RHDN_USER} \
         --password ${RHDN_PASS} \
         --autosubscribe --force
 
-      # Add EPEL
-      echo -e "\nInstalling additional repos\n"
-      dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-      curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo >\
-        "/etc/yum.repos.d/github-cli.repo"
-      echo
-      echo "Registering docker-ce-stable Repo"
-      dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-      /usr/bin/crb enable
-      
-      # Install Dev Software
-      dnf module -y reset maven
-      dnf module -y enable maven:3.8
-      dnf module -y reset nodejs
-      dnf module -y enable nodejs:20
-      dnf distro-sync -y
+      if [[ $? -ne 0 ]]; then
+        echo -e "\nFailed to attach to RHDN."
+        exit 1
+      else
+        # Enable CodeReady Builder
+        /usr/bin/crb enable
+        # Add EPEL
+        echo -e "\nInstalling additional repos\n"
+        dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+        curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo >\
+          "/etc/yum.repos.d/github-cli.repo"
+        echo
+        # Add Docker
+        echo -e "\nRegistering docker-ce-stable Repo"
+        dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        # Add Tanzu CLI
+        echo -e "\nRegistering Tanzu CLI Repo"
+        cp -v /home/vagrant/tanzu-cli.repo /etc/yum.repos.d/tanzu-cli.repo
+        echo
+        
+        # Install Dev Software
+        dnf module -y reset maven
+        dnf module -y enable maven:3.8
+        dnf module -y reset nodejs
+        dnf module -y enable nodejs:20
+        dnf distro-sync -y
 
-      # Install Container/Additional Software
-      dnf install -y podman skopeo podman-docker podman-compose tmux tree \
-        git git-lfs rsync gh java-17-openjdk-devel maven nodejs yarnpkg mkisofs isomd5sum
+        # Install Container/Additional Software
+        dnf install -y podman skopeo podman-docker podman-compose tmux tree \
+          git git-lfs rsync gh java-17-openjdk-devel maven nodejs yarnpkg mkisofs isomd5sum
 
-      # Final Software Update 
-      dnf update -y
+        # Final Software Update 
+        dnf update -y
+      fi
     fi
-    echo -e "\nDone Updating. Rebooting.\n"
+    echo -e "\nDone with setup. Rebooting...\n"
   SHELL
-
-  # Reboot to enable updates
-  config.vm.provision 'shell', reboot: true
 
   # Enable FIPS
-  config.vm.provision "shell", inline: <<-'SHELL'
+  config.vm.provision "shell", reboot: true, inline: <<-'SHELL'
     echo -e "\nEnabling FIPS\n"
     fips-mode-setup --enable
+    echo -e "\nEnabled FIPS.  Rebooting...\n"
   SHELL
-    
-  # Reboot to enable FIPS
-  config.vm.provision 'shell', reboot: true
 
-  config.vm.provision "shell", inline: <<-'SHELL'
-    echo -e "\nCollecting RHEL9 BaseOS\n"
-    reposync -p /vagrant --download-metadata --repo=rhel-8-for-x86_64-baseos-rpms
-    echo -e "\nCollecting RHEL9 Appstream\n"
-    reposync -p /vagrant --download-metadata --repo=rhel-8-for-x86_64-appstream-rpms 
-    echo -e "\nCollecting RHEL9 CodeReady Builder\n"
-    reposync -p /vagrant --download-metadata --repo=codeready-builder-for-rhel-8-x86_64-rpms
-    echo -e "\nCollecting EPEL\n"
-    reposync -p /vagrant --download-metadata --repo=epel
+  config.vm.provision "shell",  
+  env: {
+    RHDN_USER: ENV['RHDN_USER'],
+    RHDN_PASS: ENV['RHDN_PASS'],
+    REPOSYNC: ENV['REPOSYNC']
+  }, inline: <<-'SHELL'
+    # REPOSYNC=false
+    mount -a && cd /vagrant
+    if [[ -z $RHDN_USER ]] && [[ -z $RHDN_PASS ]] && [[ -z $REPOSYNC ]] && [[ ! $REPOSYNC = "true" ]]; then
+      echo -e "\nRHDN Credentials not attached or REPOSYNC=$REPOSYNC"
+    else
+      echo -e "\nRHDN Credentials attached and REPOSYNC=$REPOSYNC"
+      
+    fi
   SHELL
 end

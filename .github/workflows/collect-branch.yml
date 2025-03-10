@@ -5,9 +5,6 @@ on:
     branches-ignore:
       - main
       - full
-      - fullDevelop
-      - developFull
-      - fullCollection
   release:
     types: [edited, released]
   workflow_dispatch:
@@ -30,6 +27,7 @@ jobs:
       - name: Get disk space
         id: DISK  
         run: |
+          echo -e "\nUser ID:\n$(id)"
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
@@ -42,8 +40,8 @@ jobs:
     strategy:
         # max-parallel: 1
         matrix:
-            os: [8, 9]
-            repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+          os: [8, 9]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -70,8 +68,10 @@ jobs:
       - name: List disks
         run: df -h ${{ env.WORKDIR }}
 
-      - name: Setup Path
-        run: echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+      - name: Setup Environment
+        run: |
+          echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+          echo "WORKDIR=/mnt" >> $GITHUB_ENV
 
       - name: Register system and install packages
         run: registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
@@ -136,7 +136,7 @@ jobs:
         run: |
           cd ${{ env.WORKDIR }}
           echo "Making ISO of ${{ env.REPO }}"
-          mkisofs -r -v -l \
+          mkisofs -J -R -v -T -l \
             -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -o ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
@@ -181,7 +181,7 @@ jobs:
 
   Release:
     runs-on: ubuntu-24.04
-    needs: [Date, Collect-RPMs]
+    needs: [Date, Collect-RPMs, Sharepoint]
     permissions:
       contents: write
       pull-requests: read
@@ -216,38 +216,33 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Set Dynamic Repo Names
+      - name: Set Repo Names
         id: set_repo
         run: |
           export REPO=${{ matrix.repo }}
           REPO=${REPO/matrix/${{ matrix.os }}}
           echo -e "\nWorking on repo $REPO\n"
           echo "REPO=$REPO" >> $GITHUB_ENV
-          echo "Build short repo name"
-          case $REPO in
-            *"baseos"*) SHORT_REPO="BaseOS${{ matrix.os }}" ;;
-            *"appstream"*) SHORT_REPO="AppStream${{ matrix.os }}" ;;
-            *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
-            *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
-            *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
-          esac
-          echo "SHORT_REPO=$SHORT_REPO"
-          echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
 
-      - name: Create upload directory
+      - name: Setup upload directory
         run: |
-          sudo mkdir -p /mnt/upload
-          sudo chmod 777 /mnt/upload
-          ls -alht /mnt/upload
-
+          echo "Create mnt directory and bindmount"
+          echo -e "\nUser ID:\n$(id)"
+          mkdir -p mnt
+          sudo mount --bind -o umask=022,gid=118,uid=1001 /mnt mnt
+          sudo chown -R runner:docker /mnt
+          # echo -e "\nFile Listing\n$(ls -alht mnt)"
+            
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
           pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
-          path: /mnt/upload
+          path: mnt
 
       - name: List Artifacts
-        run: ls -1sSh /mnt/upload/*.iso*
+        run: |
+          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
+          echo -e "\nFile Listing:\n$(ls -1sSh mnt/*.iso*)"
 
       # Send Artifacts to Sharepoint
