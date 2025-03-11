@@ -146,11 +146,6 @@ Vagrant.configure("2") do |config|
   }, privileged: false, inline: <<-'SHELL'
   if [[ -z $GITHUBTOKEN ]]; then
     echo -e "\GITHUBTOKEN undefined, will not be saved"
-  else
-    echo -e "\GITHUBTOKEN defined, will be saved"
-    echo "export GITHUBTOKEN=$GITHUBTOKEN" >> /home/vagrant/.bashrc
-  fi
-
   # Create a folder
   mkdir actions-runner && cd actions-runner
   # Download the latest runner package
@@ -168,5 +163,12 @@ Vagrant.configure("2") do |config|
   echo -e "!!!      run.sh                                                                !!!"
   echo -e "!!!                                                                            !!!"
   echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  else
+    echo -e "\GITHUBTOKEN defined, will be saved"
+    echo "export GITHUBTOKEN=$GITHUBTOKEN" >> /home/vagrant/.bashrc
+setup-runner.sh && config-runner.sh
+  fi
+
+  
   SHELL
 end

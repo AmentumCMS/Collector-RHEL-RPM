@@ -149,7 +149,7 @@ Vagrant.configure("2") do |config|
   else
     echo -e "\GITHUBTOKEN defined, will be saved"
     echo "export GITHUBTOKEN=$GITHUBTOKEN" >> /home/vagrant/.bashrc
-  fi
+  file
 
   # Create a folder
   mkdir actions-runner && cd actions-runner
