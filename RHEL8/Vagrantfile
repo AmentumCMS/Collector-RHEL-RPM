@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
   config.vm.hostname = "RepoSync-RHEL8"
 
   # config.vagrant.plugins = ["vagrant-vbguest","vagrant-persistent-storage"]
-  config.vagrant.plugins = ["vagrant-vbguest"]
+  config.vagrant.plugins = ["vagrant-vbguest","vagrant-disksize"]
   config.vbguest.auto_update = false
   config.ssh.key_type = :ecdsa521 # Requires Vagrant 2.4.1
 
@@ -30,6 +30,7 @@ Vagrant.configure("2") do |config|
     # Customize CPU & Memory
     vb.cpus = 4
     vb.memory = 8192
+    config.disksize.size = '300GB'
     
     # Set up VM options
     vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
@@ -57,9 +58,10 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", 
     env: {
       RHDN_USER: ENV['RHDN_USER'],
-      RHDN_PASS: ENV['RHDN_PASS'].gsub('$', '\$'),
+      RHDN_PASS: ENV['RHDN_PASS'],
+      HOST_NAME: ENV['COMPUTERNAME'],
     }, reboot: true, inline: <<-'SHELL'
-    # env|grep RHDN
+    env|grep RHDN
     # Import .ssh to vagrant user
     echo "Setting up Vagrant User SSH"
     cat /home/vagrant/.ssh/*.pub | tee -a /home/vagrant/authorized_keys
@@ -142,7 +144,14 @@ Vagrant.configure("2") do |config|
   env: {
     GITHUBTOKEN: ENV['GITHUBTOKEN']
   }, privileged: false, inline: <<-'SHELL'
-   # Create a folder
+  if [[ -z $GITHUBTOKEN ]]; then
+    echo -e "\GITHUBTOKEN undefined, will not be saved"
+  else
+    echo -e "\GITHUBTOKEN defined, will be saved"
+    echo "export GITHUBTOKEN=$GITHUBTOKEN" >> /home/vagrant/.bashrc
+  fi
+
+  # Create a folder
   mkdir actions-runner && cd actions-runner
   # Download the latest runner package
   curl -o actions-runner-linux-x64-2.322.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.322.0/actions-runner-linux-x64-2.322.0.tar.gz
@@ -151,13 +160,13 @@ Vagrant.configure("2") do |config|
   # Extract the installer
   tar xzf ./actions-runner-linux-x64-2.322.0.tar.gz
 
-  echo -e "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  echo -e "!!!                                                                                  !!!"
-  echo -e "!!!       #Create the runner and start the configuration experience:                 !!!"
-  echo -e "!!!          config.sh --url https://github.com/AmentumCMS --token $GITHUBTOKEN      !!!"
-  echo -e "!!!       # Last step, run it!                                                       !!!"
-  echo -e "!!!          run.sh                                                                  !!!"
-  echo -e "!!!                                                                                  !!!"
-  echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  echo -e "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo -e "!!!                                                                           !!!"
+  echo -e "!!!    #Create the runner and start the configuration experience:             !!!"
+  echo -e "!!!      config.sh --url https://github.com/AmentumCMS --token $GITHUBTOKEN   !!!"
+  echo -e "!!!    # Last step, run it!                                                   !!!"
+  echo -e "!!!      run.sh                                                               !!!"
+  echo -e "!!!                                                                           !!!"
+  echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
   SHELL
 end
