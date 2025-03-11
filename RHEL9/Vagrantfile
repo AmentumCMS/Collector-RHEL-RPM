@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "generic/rhel9"
-  config.vm.hostname = "reposync-RHEL9"
+  config.vm.hostname = "RepoSync-RHEL9"
 
   # config.vagrant.plugins = ["vagrant-vbguest","vagrant-persistent-storage"]
   config.vagrant.plugins = ["vagrant-vbguest"]
@@ -57,7 +57,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", 
     env: {
       RHDN_USER: ENV['RHDN_USER'],
-      RHDN_PASS: ENV['RHDN_PASS'],
+      RHDN_PASS: ENV['RHDN_PASS'].gsub('$', '\$'),
     }, reboot: true, inline: <<-'SHELL'
     # env|grep RHDN
     # Import .ssh to vagrant user
@@ -140,17 +140,24 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell",  
   env: {
-    RHDN_USER: ENV['RHDN_USER'],
-    RHDN_PASS: ENV['RHDN_PASS'],
-    REPOSYNC: ENV['REPOSYNC']
-  }, inline: <<-'SHELL'
-    # REPOSYNC=false
-    mount -a && cd /vagrant
-    if [[ -z $RHDN_USER ]] && [[ -z $RHDN_PASS ]] && [[ -z $REPOSYNC ]] && [[ ! $REPOSYNC = "true" ]]; then
-      echo -e "\nRHDN Credentials not attached or REPOSYNC=$REPOSYNC"
-    else
-      echo -e "\nRHDN Credentials attached and REPOSYNC=$REPOSYNC"
-      
-    fi
+    GITHUBTOKEN: ENV['GITHUBTOKEN']
+  }, privileged: false, inline: <<-'SHELL'
+   # Create a folder
+  mkdir actions-runner && cd actions-runner
+  # Download the latest runner package
+  curl -o actions-runner-linux-x64-2.322.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.322.0/actions-runner-linux-x64-2.322.0.tar.gz
+  # Optional: Validate the hash
+  echo "b13b784808359f31bc79b08a191f5f83757852957dd8fe3dbfcc38202ccf5768  actions-runner-linux-x64-2.322.0.tar.gz" | shasum -a 256 -c
+  # Extract the installer
+  tar xzf ./actions-runner-linux-x64-2.322.0.tar.gz
+  
+  echo -e "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo -e "!!!                                                                                  !!!"
+  echo -e "!!!       #Create the runner and start the configuration experience:                 !!!"
+  echo -e "!!!          config.sh --url https://github.com/AmentumCMS --token $GITHUBTOKEN      !!!"
+  echo -e "!!!       # Last step, run it!                                                       !!!"
+  echo -e "!!!          run.sh                                                                  !!!"
+  echo -e "!!!                                                                                  !!!"
+  echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
   SHELL
 end
