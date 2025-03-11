@@ -29,16 +29,16 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: linux-300G
+    runs-on: self-hosted
     strategy:
         max-parallel: 1
         matrix:
             os: [8, 9]
             repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
-    container:
-      image: docker.io/redhat/ubi${{ matrix.os }}
-      env:
-        GH_TOKEN: ${{ github.token }}
+    # container:
+    #   image: docker.io/redhat/ubi${{ matrix.os }}
+    #   env:
+    #     GH_TOKEN: ${{ github.token }}
       # volumes:
       #   - $PWD:/mnt
       # credentials:
@@ -48,8 +48,8 @@ jobs:
       #   - 80
 
     steps:
-      - name: Check for dockerenv file
-        run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
+      # - name: Check for dockerenv file
+      #   run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
       
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -60,13 +60,13 @@ jobs:
       - name: List disks
         run: df -h 
 
-      - name: Setup Environment
-        run: |
-          echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
-          echo "WORKDIR=/mnt" >> $GITHUB_ENV
+      # - name: Setup Environment
+      #   run: |
+      #     echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+      #     echo "WORKDIR=/mnt" >> $GITHUB_ENV
           
-      - name: Register system and install packages
-        run: ./scripts/registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
+      # - name: Register system and install packages
+      #   run: ./scripts/registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
 
       - name: Set Dynamic Repo Names
         id: set_repo
