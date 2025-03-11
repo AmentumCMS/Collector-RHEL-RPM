@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "generic/rhel8"
-  config.vm.hostname = "reposync-RHEL8"
+  config.vm.hostname = "RepoSync-RHEL8"
 
   # config.vagrant.plugins = ["vagrant-vbguest","vagrant-persistent-storage"]
   config.vagrant.plugins = ["vagrant-vbguest"]
@@ -150,7 +150,7 @@ Vagrant.configure("2") do |config|
   echo "b13b784808359f31bc79b08a191f5f83757852957dd8fe3dbfcc38202ccf5768  actions-runner-linux-x64-2.322.0.tar.gz" | shasum -a 256 -c
   # Extract the installer
   tar xzf ./actions-runner-linux-x64-2.322.0.tar.gz
-  
+
   echo -e "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   echo -e "!!!                                                                                  !!!"
   echo -e "!!!       #Create the runner and start the configuration experience:                 !!!"
