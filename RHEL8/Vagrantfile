@@ -161,12 +161,13 @@ Vagrant.configure("2") do |config|
   tar xzf ./actions-runner-linux-x64-2.322.0.tar.gz
 
   echo -e "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  echo -e "!!!                                                                           !!!"
-  echo -e "!!!    #Create the runner and start the configuration experience:             !!!"
-  echo -e "!!!      config.sh --url https://github.com/AmentumCMS --token $GITHUBTOKEN   !!!"
-  echo -e "!!!    # Last step, run it!                                                   !!!"
-  echo -e "!!!      run.sh                                                               !!!"
-  echo -e "!!!                                                                           !!!"
+  echo -e "!!!                                                                            !!!"
+  echo -e "!!!    #Create the runner and start the configuration experience:              !!!"
+  echo -e "!!!      config.sh --url https://github.com/AmentumCMS --token $GITHUBTOKEN \  !!!"
+  echo -e "!!!          --labels rhel8                                                    !!!"
+  echo -e "!!!    # Last step, run it!                                                    !!!"
+  echo -e "!!!      run.sh                                                                !!!"
+  echo -e "!!!                                                                            !!!"
   echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
   SHELL
 end
