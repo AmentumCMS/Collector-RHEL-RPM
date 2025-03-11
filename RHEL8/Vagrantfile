@@ -134,11 +134,11 @@ Vagrant.configure("2") do |config|
   SHELL
 
   # Enable FIPS
-  config.vm.provision "shell", reboot: true, inline: <<-'SHELL'
-    echo -e "\nEnabling FIPS\n"
-    fips-mode-setup --enable
-    echo -e "\nEnabled FIPS.  Rebooting...\n"
-  SHELL
+  # config.vm.provision "shell", reboot: true, inline: <<-'SHELL'
+  #   echo -e "\nEnabling FIPS\n"
+  #   fips-mode-setup --enable
+  #   echo -e "\nEnabled FIPS.  Rebooting...\n"
+  # SHELL
 
   config.vm.provision "shell",  
   env: {
