@@ -30,9 +30,9 @@ jobs:
 
   Collect-RPMs:
     needs: [Date]
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64, rhel${{ matrix.os }}]
     strategy:
-      max-parallel: 1
+      # max-parallel: 1
       matrix:
         os: [8, 9]
         repo:
