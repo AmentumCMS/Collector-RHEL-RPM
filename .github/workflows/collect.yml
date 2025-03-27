@@ -42,7 +42,7 @@ jobs:
         # max-parallel: 1
         matrix:
           os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp, packages-microsoft-com-prod]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp, microsoft-prod, microsoft-edge]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -91,14 +91,15 @@ jobs:
             *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
             *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
-            *"packages-microsoft-com-prod") SHORT_REPO="Microsoft${{ matrix.os }}" ;;
+            *"microsoft-prod") SHORT_REPO="Microsoft-Prod${{ matrix.os }}" ;;
+            *"microsoft-edge") SHORT_REPO="Microsoft-Edge${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
 
-      - name: Run Collection for ${{ env.REPO }}
+      - name: Repo ${{ env.REPO }} Info
         run: |
-          echo -e "Repo ${{ env.REPO }} Info:\n"
+          echo -e "\nRepo ${{ env.REPO }} Info:\n"
           dnf -y repoinfo ${{ env.REPO }} | tail -n +2
 
       - name: Run Collection for ${{ env.REPO }}
