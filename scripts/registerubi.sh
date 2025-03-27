@@ -13,9 +13,9 @@ echo "Registering docker-ce-stable Repo"
 dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 echo "Registering hashicorp Repo"
 dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
-echo "Registering Microsoft Repo"
-dnf install -y https://packages.microsoft.com/config/rhel/${VERSION}/packages-microsoft-prod.rpm
-sed -i 's/packages-microsoft-com-prod/microsoft-prod/g' /etc/yum.repos.d/microsoft-prod.repo
+# echo "Registering Microsoft Repo"
+# dnf install -y https://packages.microsoft.com/config/rhel/${VERSION}/packages-microsoft-prod.rpm
+# sed -i 's/packages-microsoft-com-prod/microsoft-prod/g' /etc/yum.repos.d/microsoft-prod.repo
 echo "Registering Microsoft Edge Repo"
 rpm --import https://packages.microsoft.com/keys/microsoft.asc
 dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge

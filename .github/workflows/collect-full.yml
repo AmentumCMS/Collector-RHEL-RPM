@@ -43,7 +43,7 @@ jobs:
             epel,
             docker-ce-stable,
             hashicorp,
-            microsoft-prod,
+            # microsoft-prod,
             microsoft-edge,
           ]
     # container:
