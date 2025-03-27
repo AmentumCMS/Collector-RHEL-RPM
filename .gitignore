@@ -28,4 +28,10 @@ output/
 *.iso
 *.sha
 *.log
+*.sha
+*iso.txt
+*iso.sha
+*.dxp
+
+**/docker-ce-*/
 desktop.ini
