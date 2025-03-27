@@ -26,7 +26,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: Get disk space
-        id: DISK  
+        id: DISK
         run: |
           echo -e "\nUser ID:\n$(id)"
           df -h
@@ -39,10 +39,20 @@ jobs:
     needs: [Date]
     runs-on: ubuntu-24.04
     strategy:
-        # max-parallel: 1
-        matrix:
-          os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp, microsoft-prod, microsoft-edge]
+      # max-parallel: 1
+      matrix:
+        os: [8, 9]
+        repo:
+          [
+            rhel-matrix-for-x86_64-baseos-rpms,
+            rhel-matrix-for-x86_64-appstream-rpms,
+            codeready-builder-for-rhel-matrix-x86_64-rpms,
+            epel,
+            docker-ce-stable,
+            hashicorp,
+            microsoft-prod,
+            microsoft-edge,
+          ]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -59,7 +69,7 @@ jobs:
     steps:
       - name: Check for dockerenv file
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
-      
+
       - name: Check out repository code
         uses: actions/checkout@v4
 
@@ -239,8 +249,15 @@ jobs:
     needs: [Date, Collect-RPMs]
     strategy:
       matrix:
-          os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable]
+        os: [8, 9]
+        repo:
+          [
+            rhel-matrix-for-x86_64-baseos-rpms,
+            rhel-matrix-for-x86_64-appstream-rpms,
+            codeready-builder-for-rhel-matrix-x86_64-rpms,
+            epel,
+            docker-ce-stable,
+          ]
     permissions:
       contents: write
       pull-requests: read
@@ -263,7 +280,7 @@ jobs:
           sudo mount --bind -o umask=022,gid=118,uid=1001 /mnt mnt
           sudo chown -R runner:docker /mnt
           # echo -e "\nFile Listing\n$(ls -alht mnt)"
-            
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
