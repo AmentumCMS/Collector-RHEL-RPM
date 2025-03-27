@@ -1,2 +1,5 @@
 .vagrant*
 *.tgz
+*.txt
+*.log
+*.sha
