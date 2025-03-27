@@ -21,6 +21,7 @@ jobs:
       - name: Get disk space
         id: DISK  
         run: |
+          echo -e "\nUser ID:\n$(id)"
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
@@ -82,9 +83,15 @@ jobs:
             *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
             *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
+            *"packages-microsoft-com-prod") SHORT_REPO="${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
+
+      - name: Run Collection for ${{ env.REPO }}
+        run: |
+          echo -e "Repo ${{ env.REPO }} Info:\n"
+          dnf -y repoinfo ${{ env.REPO }} | tail -n +2
 
       - name: Run Collection for ${{ env.REPO }}
         run: |

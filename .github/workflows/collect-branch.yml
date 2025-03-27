@@ -41,7 +41,7 @@ jobs:
         # max-parallel: 1
         matrix:
           os: [8, 9]
-          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp]
+          repo: [rhel-matrix-for-x86_64-baseos-rpms, rhel-matrix-for-x86_64-appstream-rpms, codeready-builder-for-rhel-matrix-x86_64-rpms, epel, docker-ce-stable, hashicorp, packages-microsoft-com-prod]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -90,16 +90,22 @@ jobs:
             *"codeready-builder"*) SHORT_REPO="CRB${{ matrix.os }}" ;;
             *"epel"*) SHORT_REPO="EPEL${{ matrix.os }}" ;;
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
+            *"packages-microsoft-com-prod") SHORT_REPO="${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
+          echo -e "Repo ${{ env.REPO }} Info:\n"
+          dnf -y repoinfo ${{ env.REPO }} | tail -n +2
+
+      - name: Run Collection for ${{ env.REPO }}
+        run: |
           cd ${{ env.WORKDIR }}
           echo "Collecting repo ${{ env.REPO }} RPMs"
           reposync.sh ${{ env.REPO }}
-          ls *.log
+          echo "Logfile: $(ls -1Ssh *.log)"
 
       - name: Upload reposync log
         uses: actions/upload-artifact@v4
