@@ -131,7 +131,7 @@ jobs:
       - name: Show Consumption
         run: |
           echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
+          echo -e "Disk Space\n$(df -h ${{ env.WORKDIR }}/)"
 
       - name: TARchive ${{ env.REPO }} RPMs
         run: |
@@ -147,13 +147,6 @@ jobs:
           sha256sum -b ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz  | tee \
             ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz.sha
 
-      - name: List files 
-        run: |
-          echo "Disk Free Space"
-          df -h ${{ env.WORKDIR }}
-          echo -e "\nDirectory Listing"
-          ls -1sSh ${{ env.WORKDIR }}/${{ env.REPO }}/${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz*
-
       - name: ISO Table of contents
         run: |
           cd ${{ env.WORKDIR }}
@@ -166,6 +159,11 @@ jobs:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           path: ${{ env.WORKDIR }}/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
+
+      - name: Show Consumption
+        run: |
+          echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
+          echo -e "Disk Space\n$(df -h ${{ env.WORKDIR }}/)"
 
       - name: Make ${{ env.REPO }} ISO
         run: |
