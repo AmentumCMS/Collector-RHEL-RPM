@@ -167,7 +167,7 @@ jobs:
         run: |
           cd ${{ env.WORKDIR }}
           echo "Making ISO of ${{ env.REPO }}"
-          mkisofs -J -R -iso-level 3 -v -l \
+          mkisofs -R -iso-level 3 -v -l \
             -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
             -o ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
