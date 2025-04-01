@@ -134,8 +134,22 @@ jobs:
           echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
           echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
 
-      # - name: Copy README to ${{ env.REPO }} ISO
-      #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
+      - name: TARchive ${{ env.REPO }} RPMs
+        run: |
+          cd ${{ env.WORKDIR }}
+          tar -cv -Ipigz --remove-files \
+            -f ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz \
+            ${{ matrix.repo }} \
+            | tee ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz.txt
+
+      - name: Generate Hash
+        run: |
+          cd ${{ env.WORKDIR }}
+          sha256sum -b ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz  | tee \
+            ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz.sha
+
+      - name: List files 
+        run: ls -1sSh ${{ env.WORKDIR }}/${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz*
 
       - name: ISO Table of contents
         run: |
