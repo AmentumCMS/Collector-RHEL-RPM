@@ -139,7 +139,7 @@ jobs:
           cd ${{ env.WORKDIR }}/${{ env.REPO }}
           tar -cv -Ipigz --remove-files \
             -f ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz \
-            ${{ matrix.repo }} \
+            -C .. ${{ matrix.repo }} \
             | tee ${{ matrix.repo }}-${{ matrix.os }}-RPMS-${{ needs.Date.outputs.Date }}.tgz.txt
 
       - name: Generate Hash
