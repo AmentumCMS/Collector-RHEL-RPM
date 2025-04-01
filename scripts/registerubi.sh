@@ -4,7 +4,7 @@ export PATH=$PATH:$PWD/scripts
 rm -v /etc/rhsm-host /etc/yum.repos.d/ubi.repo
 subscription-manager register --username ${1} --password ${2}
 echo "Installing Software"
-dnf install -y dnf-plugins-core yum-utils xorriso isomd5sum tree procps-ng ncurses
+dnf install -y dnf-plugins-core yum-utils xorriso isomd5sum tree procps-ng ncurses pigz
 echo "Registering Code Ready Builder Repo"
 subscription-manager repos --enable codeready-builder-for-rhel-${VERSION}-x86_64-rpms
 echo "Registering epel Repo"
