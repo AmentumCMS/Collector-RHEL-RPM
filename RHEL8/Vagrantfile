@@ -123,8 +123,8 @@ Vagrant.configure("2") do |config|
         dnf distro-sync -y
 
         # Install Container/Additional Software
-        dnf install -y podman skopeo podman-docker podman-compose tmux tree \
-          git git-lfs rsync gh java-17-openjdk-devel maven nodejs yarnpkg mkisofs isomd5sum
+        dnf install -y podman skopeo podman-docker podman-compose tmux tree git git-lfs rsync\
+          gh java-17-openjdk-devel maven nodejs yarnpkg xorriso isomd5sum genisoimage
 
         # Final Software Update 
         dnf update -y
