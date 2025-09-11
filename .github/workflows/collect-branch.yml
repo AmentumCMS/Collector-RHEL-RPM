@@ -136,6 +136,15 @@ jobs:
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
+      - name: Generate SHA Hashes
+        run: |
+          cd ${{ env.WORKDIR }}
+          # Find all files and hash them
+          find . -type f | while read -r file; do
+              # Calculate SHA256 hash relative to top-level directory
+              sha256sum "$file" | tee -a "${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.sha"
+          done
+
       - name: ISO Table of contents
         run: |
           cd ${{ env.WORKDIR }}
