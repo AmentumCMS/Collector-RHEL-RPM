@@ -1,0 +1,56 @@
+name: UBI-IB Main Collection Sharepoint Upload
+on:
+  release:
+    types: [edited, released]
+  workflow_dispatch:
+
+jobs:
+  Date:
+    uses: ./.github/workflows/reusable-date.yml
+    permissions: {}
+
+  Sharepoint:
+    needs: [Date]
+    uses: ./.github/workflows/reusable-sharepoint-upload.yml
+    with:
+      date: ${{ needs.Date.outputs.date }}
+      file_path: "${{ vars.COLLECTOR }}-*.*"
+      upload_path_suffix: "${{ needs.Date.outputs.date }}"
+    secrets: inherit
+    permissions:
+      contents: write
+<<<<<<< HEAD
+      pull-requests: read
+=======
+      pull-requests: read
+    steps:
+      - name: Determine runner mounts
+        run: |
+          sudo echo -e "Disk freespace and mounts\n$(df -hT)\n\n$(mount)" | tee runner-disks.txt
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: Validate Artifacts
+        run: |
+          echo -e "Artifacts Downloaded\n$(find . -type f -iname *sha -execdir sha256sum -c {} \;)"
+
+      - name: Show Artifacts
+        run: ls -1sh ${{ vars.COLLECTOR }}-*.*
+
+      # Upload files to Sharepoint
+
+      - name: Send Files to Sharepoint
+        uses: amentumcms/sharepoint-file-upload-action@main
+        with:
+          file_path: "${{ vars.COLLECTOR }}-*.*"
+          host_name: "${{ secrets.SHAREPOINT_HOST }}"
+          site_name: "${{ secrets.SHAREPOINT_SITE }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          client_id: ${{ secrets.SHAREPOINT_APP_ID }}
+          client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
+          login_endpoint: "login.microsoftonline.us"
+          graph_endpoint: "graph.microsoft.us"
+>>>>>>> origin
