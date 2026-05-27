@@ -28,6 +28,7 @@ jobs:
         id: DISK
         run: |
           echo -e "\nUser ID:\n$(id)"
+          df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
           echo -e "\nPermissions on /mnt"
@@ -217,5 +218,3 @@ jobs:
         run: ls -sS1h *.iso.*
 
       # Section to actually create a release
-
-  # Upload to Sharepoint Job

@@ -71,7 +71,7 @@ jobs:
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
 
       - name: Check out repository code
-        uses: actions/upload-artifact@v7
+        uses: actions/checkout@v6
 
       - name: Show Files
         run: ls -Alht
@@ -207,7 +207,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out repository code
-        uses: actions/upload-artifact@v7
+        uses: actions/checkout@v6
 
       - name: Download Artifacts
         uses: actions/download-artifact@v8
