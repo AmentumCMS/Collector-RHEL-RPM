@@ -11,9 +11,24 @@ jobs:
     outputs:
       date: ${{ steps.date.outputs.date }}
     steps:
-      - name: Get Date
-        id: date
-        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: Get current date
+        id: DATE
+        run: |
+          echo "Setting Date"
+          echo "DATE=$(date '+%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+          echo -e "\nWrote to file:\n$GITHUB_OUTPUT\n"
+          echo "Values:"
+          cat $GITHUB_OUTPUT
+
+      - name: Get disk space
+        id: DISK
+        run: |
+          echo -e "\nUser ID:\n$(id)"
+          df -h
+          echo -e "\nDisk List"
+          sudo fdisk -l | grep -i disk
+          echo -e "\nPermissions on /mnt"
+          ls -alht /mnt
 
   Sharepoint:
     needs: [Date]
