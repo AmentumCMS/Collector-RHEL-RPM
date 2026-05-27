@@ -6,20 +6,37 @@ on:
 
 jobs:
   Date:
-    uses: ./.github/workflows/reusable-date.yml
+    runs-on: ubuntu-latest
     permissions: {}
+    outputs:
+      date: ${{ steps.date.outputs.date }}
+    steps:
+      - name: Get current date
+        id: DATE
+        run: |
+          echo "Setting Date"
+          echo "DATE=$(date '+%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+          echo -e "\nWrote to file:\n$GITHUB_OUTPUT\n"
+          echo "Values:"
+          cat $GITHUB_OUTPUT
+
+      - name: Get disk space
+        id: DISK
+        run: |
+          echo -e "\nUser ID:\n$(id)"
+          df -h
+          echo -e "\nDisk List"
+          sudo fdisk -l | grep -i disk
+          echo -e "\nPermissions on /mnt"
+          ls -alht /mnt
 
   Sharepoint:
     needs: [Date]
-    uses: ./.github/workflows/reusable-sharepoint-upload.yml
-    with:
-      date: ${{ needs.Date.outputs.date }}
-      file_path: "${{ vars.COLLECTOR }}-*.*"
-      upload_path_suffix: "${{ needs.Date.outputs.date }}"
-    secrets: inherit
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: read
+      
     steps:
       - name: Determine runner mounts
         run: |
@@ -44,7 +61,7 @@ jobs:
           file_path: "${{ vars.COLLECTOR }}-*.*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
-          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
+          upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.date }}"
           tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
           client_id: ${{ secrets.SHAREPOINT_APP_ID }}
           client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
