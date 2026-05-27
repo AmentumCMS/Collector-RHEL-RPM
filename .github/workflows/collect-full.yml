@@ -5,7 +5,7 @@ on:
 
 jobs:
   Date:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     outputs:
       Date: ${{ steps.date.outputs.date }}
     steps:
@@ -63,7 +63,7 @@ jobs:
       #   run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
 
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/upload-artifact@v7
 
       - name: Show Files
         run: ls -Alht
@@ -111,7 +111,7 @@ jobs:
           echo "Logfile: $(ls -1Ssh *.log)"
 
       - name: Upload reposync log
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
           path: ${{ env.REPO }}.log
@@ -134,7 +134,7 @@ jobs:
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
       - name: Upload ISO ToC artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           path: ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
@@ -149,7 +149,7 @@ jobs:
         run: ls -sS1h *.iso*
 
       - name: Upload ISO SHA artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: "*.sha"
@@ -182,7 +182,7 @@ jobs:
           echo "Done"
 
   # Release:
-  #   runs-on: ubuntu-24.04
+  #   runs-on: ubuntu-latest
   #   needs: [Date, Collect-RPMs]
   #   permissions:
   #     contents: write
@@ -191,10 +191,10 @@ jobs:
   #     GH_TOKEN: ${{ github.token }}
   #   steps:
   #     - name: Check out repository code
-  #       uses: actions/checkout@v4
+  #       uses: actions/upload-artifact@v7
 
   #     - name: Download Artifacts
-  #       uses: actions/download-artifact@v4
+  #       uses: actions/download-artifact@v8
   #       with:
   #         merge-multiple: true
   #         pattern: "*.iso.*"
@@ -219,7 +219,7 @@ jobs:
 
   #     - name: Create Release
   #       id: create_release
-  #       uses: softprops/action-gh-release@v2
+  #       uses: softprops/action-gh-release@v3
   #       with:
   #         name: ${{ vars.COLLECTOR }}-Full ${{ needs.Date.outputs.Date }}
   #         tag_name: ${{ needs.Date.outputs.Date }}-Full
