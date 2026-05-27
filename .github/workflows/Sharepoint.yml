@@ -19,9 +19,6 @@ jobs:
     secrets: inherit
     permissions:
       contents: write
-<<<<<<< HEAD
-      pull-requests: read
-=======
       pull-requests: read
     steps:
       - name: Determine runner mounts
@@ -53,4 +50,3 @@ jobs:
           client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
           login_endpoint: "login.microsoftonline.us"
           graph_endpoint: "graph.microsoft.us"
->>>>>>> origin
