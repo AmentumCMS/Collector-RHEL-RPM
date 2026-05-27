@@ -197,7 +197,7 @@ jobs:
 
   Release:
     runs-on: ubuntu-latest
-    needs: [Date, Collect-RPMs, Sharepoint]
+    needs: [Date, Collect-RPMs]
     permissions:
       contents: write
       pull-requests: read
@@ -219,53 +219,3 @@ jobs:
       # Section to actually create a release
 
   # Upload to Sharepoint Job
-  Sharepoint:
-    runs-on: ubuntu-latest
-    needs: [Date, Collect-RPMs]
-    strategy:
-      matrix:
-        os: [8, 9]
-        repo:
-          [
-            rhel-matrix-for-x86_64-baseos-rpms,
-            rhel-matrix-for-x86_64-appstream-rpms,
-            codeready-builder-for-rhel-matrix-x86_64-rpms,
-            epel,
-            docker-ce-stable,
-          ]
-    permissions:
-      contents: write
-      pull-requests: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Set Repo Names
-        id: set_repo
-        run: |
-          export REPO=${{ matrix.repo }}
-          REPO=${REPO/matrix/${{ matrix.os }}}
-          echo -e "\nWorking on repo $REPO\n"
-          echo "REPO=$REPO" >> $GITHUB_ENV
-
-      - name: Setup upload directory
-        run: |
-          echo "Create mnt directory and bindmount"
-          echo -e "\nUser ID:\n$(id)"
-          mkdir -p mnt
-          sudo mount --bind -o umask=022,gid=118,uid=1001 /mnt mnt
-          sudo chown -R runner:docker /mnt
-          # echo -e "\nFile Listing\n$(ls -alht mnt)"
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          merge-multiple: true
-          pattern: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso*"
-          path: mnt
-
-      - name: List Artifacts
-        run: |
-          echo -e "\nDisk mounts:\n$(df -h|grep mnt)"
-          echo -e "\nFile Listing:\n$(ls -1sSh mnt/*.iso*)"
-
-      # Send Artifacts to Sharepoint
