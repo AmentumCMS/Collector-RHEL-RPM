@@ -1,2 +1,13 @@
 .vagrant*
 *.tgz
+*.txt
+*.log
+*.sha
+# Ignore Repositories
+**/rhel-*-for-x86_64-*-rpms/
+**/ubi*-rpms/
+**/codeready-builder-for-rhel-*-x86_64-rpms/
+**/epel*/
+**/microsoft*/
+**/docker-ce-*/
+**/hashicorp/
