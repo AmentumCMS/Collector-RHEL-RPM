@@ -1,6 +1,6 @@
 FROM redhat/ubi8
 
-RUN yum install -y yum-utils tree free &&\
+RUN yum install -y yum-utils procps-ng &&\
     yum clean all &&\
     rm -rf /var/cache/yum
 
