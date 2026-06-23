@@ -40,7 +40,7 @@ jobs:
     strategy:
       # max-parallel: 1
       matrix:
-        os: [8, 9, 10]
+        os: [9, 10]
         repo:
           [
             rhel-matrix-for-x86_64-baseos-rpms,
@@ -190,10 +190,10 @@ jobs:
       - name: Show files
         run: tree -sh ${{ env.WORKDIR }}
 
-      - name: Send Files to Sharepoint
+      - name: Send ISO to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "**/*.iso*"
+          file_path: "${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso"
           file_path_recursive_match: true
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
