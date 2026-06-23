@@ -85,7 +85,7 @@ jobs:
       - name: Setup Environment
         run: |
           echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
-          echo "WORKDIR=/mnt" >> $GITHUB_ENV
+          # echo "WORKDIR=/mnt" >> $GITHUB_ENV
 
       - name: Register system and install packages
         run: registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
@@ -126,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}.log
+          path: ${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -154,7 +154,6 @@ jobs:
 
       - name: Make ${{ env.REPO }} ISO
         run: |
-          cd ${{ env.WORKDIR }}
           echo "Making ISO of ${{ env.REPO }}"
           mkisofs -J -R -v -T -l \
             -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
@@ -188,9 +187,9 @@ jobs:
 
       # upload to sharepooint test
       - name: Show files
-        run: ls -sS1h ${{ env.WORKDIR }}/*
+        run: ls -sS1h *
       - name: Show files
-        run: tree -sh ${{ env.WORKDIR }}
+        run: tree -sh .
 
       - name: Send ISO to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
