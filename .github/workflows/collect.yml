@@ -186,6 +186,11 @@ jobs:
           path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # upload to sharepooint test
+      - name: Show files
+        run: ls -sS1h ${{ env.WORKDIR }}/*
+      - name: Show files
+        run: tree -sh ${{ env.WORKDIR }}
+
       - name: Send Files to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
