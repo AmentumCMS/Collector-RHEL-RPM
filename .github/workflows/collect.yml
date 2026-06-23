@@ -189,7 +189,7 @@ jobs:
       - name: Send Files to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "*.iso*"
+          file_path: "${{ env.WORKDIR }}/*.iso*"
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
           upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
