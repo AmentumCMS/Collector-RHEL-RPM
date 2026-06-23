@@ -40,25 +40,29 @@ jobs:
     strategy:
       # max-parallel: 1
       matrix:
-        os: [9, 10]
+        os: [
+              # 8,
+              9,
+              # 10
+            ]
         repo:
           [
-            rhel-matrix-for-x86_64-baseos-rpms,
-            rhel-matrix-for-x86_64-appstream-rpms,
-            codeready-builder-for-rhel-matrix-x86_64-rpms,
-            epel,
+            # rhel-matrix-for-x86_64-baseos-rpms,
+            # rhel-matrix-for-x86_64-appstream-rpms,
+            # codeready-builder-for-rhel-matrix-x86_64-rpms,
+            # epel,
             docker-ce-stable,
-            hashicorp,
+            # hashicorp,
             # microsoft-prod,
-            microsoft-edge,
+            # microsoft-edge,
           ]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
         GH_TOKEN: ${{ github.token }}
-        WORKDIR: /mnt
-      volumes:
-        - /mnt:/mnt
+        # WORKDIR: /mnt
+      # volumes:
+      #   - /mnt:/mnt
       # credentials:
       #   username: ${{ secrets.REGISTRY_USER }}
       #   password: ${{ secrets.REGISTRY_TOKEN }}
@@ -76,7 +80,7 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h ${{ env.WORKDIR }}
+        run: df -h
 
       - name: Setup Environment
         run: |
@@ -113,7 +117,7 @@ jobs:
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
-          cd ${{ env.WORKDIR }}
+          # cd ${{ env.WORKDIR }}
           echo "Collecting repo ${{ env.REPO }} RPMs"
           reposync.sh ${{ env.REPO }}
           echo "Logfile: $(ls -1Ssh *.log)"
@@ -130,15 +134,14 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
+          echo -e "Disk Usage $(du -chs ${{ env.REPO }})\n"
+          echo -e "Disk Space $(df -h)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
       - name: ISO Table of contents
         run: |
-          cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
@@ -146,7 +149,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ env.REPO }} ISO
@@ -164,25 +167,24 @@ jobs:
 
       - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          cd ${{ env.WORKDIR }}
           sha256sum -b ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
             ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -sS1h ${{ env.WORKDIR }}/*.iso*
+        run: ls -sS1h *.iso*
 
       - name: Upload ISO
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           if-no-files-found: error
 
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          path: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       # upload to sharepooint test
       - name: Show files
@@ -193,7 +195,7 @@ jobs:
       - name: Send ISO to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
-          file_path: "${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso"
+          file_path: "${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso"
           file_path_recursive_match: true
           host_name: "${{ secrets.SHAREPOINT_HOST }}"
           site_name: "${{ secrets.SHAREPOINT_SITE }}"
@@ -207,7 +209,6 @@ jobs:
       # Cleanup
       - name: Clean up
         run: |
-          cd ${{ env.WORKDIR }}
           echo "Remove ${{ env.REPO }}"
           rm -rf ${{ env.REPO }}
           echo "Remove Artifacts"
