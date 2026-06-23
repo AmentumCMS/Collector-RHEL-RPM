@@ -32,8 +32,8 @@ jobs:
           df -h
           echo -e "\nDisk List"
           sudo fdisk -l | grep -i disk
-          echo -e "\nPermissions on /mnt"
-          ls -alht /mnt
+          # echo -e "\nPermissions on /mnt"
+          # ls -alht /mnt
 
   Collect-RPMs:
     needs: [Date]
@@ -163,12 +163,12 @@ jobs:
             ${{ env.REPO }}
 
       - name: Implant MD5 sum into ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-        run: implantisomd5 /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
 
       - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
         run: |
-          sha256sum -b ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
-            ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
+          sha256sum -b ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
+          | tee ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
         run: ls -sS1h *.iso*
