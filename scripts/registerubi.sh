@@ -11,6 +11,8 @@ echo "Registering epel Repo"
 dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${VERSION}.noarch.rpm
 echo "Registering docker-ce-stable Repo"
 dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+echo "Registering nodejs 26 Repo"
+curl -fsSL https://rpm.nodesource.com/setup_26.x | sudo bash -
 echo "Registering hashicorp Repo"
 dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 # echo "Registering Microsoft Repo"
