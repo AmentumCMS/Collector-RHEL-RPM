@@ -3,6 +3,8 @@
 *.txt
 *.log
 *.sha
+*.rpm
+
 # Ignore Repositories
 **/rhel-*-for-x86_64-*-rpms/
 **/ubi*-rpms/
@@ -11,3 +13,4 @@
 **/microsoft*/
 **/docker-ce-*/
 **/hashicorp/
+**/nodesource-nodejs/
