@@ -107,6 +107,7 @@ jobs:
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
             *"microsoft-prod") SHORT_REPO="Microsoft-Prod${{ matrix.os }}" ;;
             *"microsoft-edge") SHORT_REPO="Microsoft-Edge${{ matrix.os }}" ;;
+            *"nodesource-nodejs") SHORT_REPO="Nodesource${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
