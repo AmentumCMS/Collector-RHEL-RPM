@@ -1,10 +1,29 @@
 version: '1.0'    
 services:
+  rhel10-rpm-collector:
+    build:
+      context: ./
+      dockerfile: ./RHEL10/Dockerfile
+    environment:
+      - RHDN_USER=${RHDN_USER}
+      - RHDN_PASS=${RHDN_PASS}
+    volumes:
+      - ./RHEL10:/RHEL
   rhel9-rpm-collector:
     build:
       context: ./
       dockerfile: ./RHEL9/Dockerfile
+    environment:
+      - RHDN_USER=${RHDN_USER}
+      - RHDN_PASS=${RHDN_PASS}
+    volumes:
+      - ./RHEL9:/RHEL
   rhel8-rpm-collector:
     build:
       context: ./
       dockerfile: ./RHEL8/Dockerfile
+    environment:
+      - RHDN_USER=${RHDN_USER}
+      - RHDN_PASS=${RHDN_PASS}
+    volumes:
+      - ./RHEL8:/RHEL
