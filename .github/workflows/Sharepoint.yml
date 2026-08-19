@@ -51,7 +51,7 @@ jobs:
           echo -e "Artifacts Downloaded\n$(find . -type f -iname *sha -execdir sha256sum -c {} \;)"
 
       - name: Show Artifacts
-        run: ls -1sh ${{ vars.COLLECTOR }}-*.*
+        run: ls -1sh .
 
       # Upload files to Sharepoint
 
