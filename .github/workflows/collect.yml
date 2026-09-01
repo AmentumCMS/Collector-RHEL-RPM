@@ -9,6 +9,17 @@ on:
   release:
     types: [edited, released]
   workflow_dispatch:
+    inputs:
+      os:
+        description: 'Comma-separated RHEL major versions to collect (e.g. "8" or "8,9"). Leave blank for all (8,9,10).'
+        required: false
+        type: string
+        default: ""
+      repo:
+        description: 'Comma-separated repo keys to collect (e.g. "microsoft-edge" or "epel,hashicorp"). Leave blank for all.'
+        required: false
+        type: string
+        default: ""
 
 jobs:
   Date:
@@ -35,24 +46,43 @@ jobs:
           echo -e "\nPermissions on /mnt"
           ls -alht /mnt
 
+  Matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set.outputs.os }}
+      repo: ${{ steps.set.outputs.repo }}
+    steps:
+      - name: Determine collection matrix
+        id: set
+        run: |
+          OS_INPUT="${{ inputs.os }}"
+          REPO_INPUT="${{ inputs.repo }}"
+
+          if [ -n "$OS_INPUT" ]; then
+            OS_JSON=$(echo "$OS_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(tonumber)')
+          else
+            OS_JSON='[8,9,10]'
+          fi
+
+          if [ -n "$REPO_INPUT" ]; then
+            REPO_JSON=$(echo "$REPO_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";""))')
+          else
+            REPO_JSON='["rhel-matrix-for-x86_64-baseos-rpms","rhel-matrix-for-x86_64-appstream-rpms","codeready-builder-for-rhel-matrix-x86_64-rpms","epel","docker-ce-stable","hashicorp","microsoft-edge"]'
+          fi
+
+          echo "Resolved os matrix: $OS_JSON"
+          echo "Resolved repo matrix: $REPO_JSON"
+          echo "os=$OS_JSON" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO_JSON" >> "$GITHUB_OUTPUT"
+
   Collect-RPMs:
-    needs: [Date]
+    needs: [Date, Matrix]
     runs-on: ubuntu-latest
     strategy:
       # max-parallel: 1
       matrix:
-        os: [8, 9, 10]
-        repo:
-          [
-            rhel-matrix-for-x86_64-baseos-rpms,
-            rhel-matrix-for-x86_64-appstream-rpms,
-            codeready-builder-for-rhel-matrix-x86_64-rpms,
-            epel,
-            docker-ce-stable,
-            hashicorp,
-            # microsoft-prod,
-            microsoft-edge,
-          ]
+        os: ${{ fromJson(needs.Matrix.outputs.os) }}
+        repo: ${{ fromJson(needs.Matrix.outputs.repo) }}
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
