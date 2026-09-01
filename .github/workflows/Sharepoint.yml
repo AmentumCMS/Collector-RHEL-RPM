@@ -1,7 +1,5 @@
 name: UBI-IB Main Collection Sharepoint Upload
 on:
-  release:
-    types: [edited, released]
   workflow_dispatch:
 
 jobs:
@@ -19,7 +17,6 @@ jobs:
           echo -e "\nWrote to file:\n$GITHUB_OUTPUT\n"
           echo "Values:"
           cat $GITHUB_OUTPUT
-
       - name: Get disk space
         id: DISK
         run: |
@@ -36,15 +33,28 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-      
+
     steps:
+      - name: Verify ref is a tag
+        run: |
+          if [[ "${{ github.ref_type }}" != "tag" ]]; then
+            echo "::error::This workflow must be run from a tag (use the 'Use workflow from' dropdown to pick a tag), not a branch. Selected ref: ${{ github.ref }}"
+            exit 1
+          fi
+          echo "Using tag: ${{ github.ref_name }}"
+
       - name: Determine runner mounts
         run: |
           sudo echo -e "Disk freespace and mounts\n$(df -hT)\n\n$(mount)" | tee runner-disks.txt
-      - name: Download Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          merge-multiple: true
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "*.iso*" \
+            --dir .
 
       - name: Validate Artifacts
         run: |
@@ -52,8 +62,6 @@ jobs:
 
       - name: Show Artifacts
         run: ls -1sh .
-
-      # Upload files to Sharepoint
 
       - name: Send Files to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
