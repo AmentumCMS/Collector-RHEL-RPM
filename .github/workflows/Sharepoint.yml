@@ -47,17 +47,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.event.release.tag_name || github.ref_name }}"
-          echo "Looking up build run for tag: $TAG"
+          echo "Looking up the collect.yml run whose artifacts match tag: $TAG"
 
-          RUN_ID=$(gh run list \
-            --repo "${{ github.repository }}" \
-            --workflow "collect.yml" \
-            --branch "$TAG" \
-            --json databaseId \
-            --jq '.[0].databaseId')
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
+            --paginate \
+            --jq ".artifacts[] | select(.name | contains(\"$TAG\")) | .workflow_run.id" \
+            | sort -u | head -n1)
 
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-            echo "::error::No workflow run found for tag $TAG"
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::No artifacts found whose name contains tag $TAG"
             exit 1
           fi
 
