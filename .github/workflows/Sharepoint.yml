@@ -51,7 +51,7 @@ jobs:
 
           RUN_ID=$(gh run list \
             --repo "${{ github.repository }}" \
-            --workflow "<BUILD_WORKFLOW_FILENAME>.yml" \
+            --workflow "collect.yml" \
             --branch "$TAG" \
             --json databaseId \
             --jq '.[0].databaseId')
