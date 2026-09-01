@@ -1,7 +1,8 @@
-name: UBI-IB Main Collection Sharepoint Upload
+name: RHEL RPM Main Collection Sharepoint Upload
 on:
+  release:
+    types: [edited, released]
   workflow_dispatch:
-
 jobs:
   Date:
     runs-on: ubuntu-latest
@@ -32,29 +33,43 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read       # required so download-artifact can query/pull from another run
       pull-requests: read
 
     steps:
-      - name: Verify ref is a tag
-        run: |
-          if [[ "${{ github.ref_type }}" != "tag" ]]; then
-            echo "::error::This workflow must be run from a tag (use the 'Use workflow from' dropdown to pick a tag), not a branch. Selected ref: ${{ github.ref }}"
-            exit 1
-          fi
-          echo "Using tag: ${{ github.ref_name }}"
-
       - name: Determine runner mounts
         run: |
           sudo echo -e "Disk freespace and mounts\n$(df -hT)\n\n$(mount)" | tee runner-disks.txt
 
-      - name: Download release assets
+      - name: Resolve source run for this tag
+        id: find_run
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download "${{ github.ref_name }}" \
+          TAG="${{ github.event.release.tag_name || github.ref_name }}"
+          echo "Looking up build run for tag: $TAG"
+
+          RUN_ID=$(gh run list \
             --repo "${{ github.repository }}" \
-            --pattern "*.iso*" \
-            --dir .
+            --workflow "<BUILD_WORKFLOW_FILENAME>.yml" \
+            --branch "$TAG" \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "::error::No workflow run found for tag $TAG"
+            exit 1
+          fi
+
+          echo "Resolved run id: $RUN_ID for tag $TAG"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+          run-id: ${{ steps.find_run.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Validate Artifacts
         run: |
@@ -63,6 +78,7 @@ jobs:
       - name: Show Artifacts
         run: ls -1sh .
 
+      # Upload files to Sharepoint
       - name: Send Files to Sharepoint
         uses: amentumcms/sharepoint-file-upload-action@main
         with:
