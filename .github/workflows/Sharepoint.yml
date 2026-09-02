@@ -3,6 +3,12 @@ on:
   release:
     types: [edited, released]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing collection tag to upload (e.g. 20260902-0526). Leave blank to use the release tag. Lets you re-run the upload against an already-collected run without re-collecting.'
+        required: false
+        type: string
+        default: ""
 jobs:
   Date:
     runs-on: ubuntu-latest
@@ -45,7 +51,7 @@ jobs:
         id: find
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
         run: |
           echo "Looking up the collect.yml artifacts whose names match tag: $TAG"
 
