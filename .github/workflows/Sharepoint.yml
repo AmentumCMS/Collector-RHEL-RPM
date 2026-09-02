@@ -28,53 +28,90 @@ jobs:
           echo -e "\nPermissions on /mnt"
           ls -alht /mnt
 
-  Sharepoint:
+  # Resolve the collect.yml run for this tag and enumerate its artifacts so the
+  # Sharepoint job can fan out over them one-at-a-time (a single runner can't
+  # hold every ISO at once -- that overflows the small workspace disk).
+  Enumerate:
     needs: [Date]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      actions: read       # required so download-artifact can query/pull from another run
-      pull-requests: read
-
+      actions: read       # required so we can query artifacts from another run
+    outputs:
+      run_id: ${{ steps.find.outputs.run_id }}
+      artifacts: ${{ steps.find.outputs.artifacts }}
     steps:
-      - name: Determine runner mounts
-        run: |
-          sudo echo -e "Disk freespace and mounts\n$(df -hT)\n\n$(mount)" | tee runner-disks.txt
-
-      - name: Resolve source run for this tag
-        id: find_run
+      - name: Resolve source run and artifact list for this tag
+        id: find
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.event.release.tag_name || github.ref_name }}"
-          echo "Looking up the collect.yml run whose artifacts match tag: $TAG"
+          echo "Looking up the collect.yml artifacts whose names match tag: $TAG"
 
-          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
+          ARTIFACTS_JSON=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
             --paginate \
-            --jq ".artifacts[] | select(.name | contains(\"$TAG\")) | .workflow_run.id" \
-            | sort -u | head -n1)
+            --jq "[.artifacts[] | select(.name | contains(\"$TAG\")) | {name, run_id: .workflow_run.id}]")
 
-          if [ -z "$RUN_ID" ]; then
+          # Pick a single source run (the smallest run id) and keep only its artifacts,
+          # so a tag reused across runs can't mix artifacts from different collections.
+          RUN_ID=$(echo "$ARTIFACTS_JSON" | jq -r '[.[].run_id] | unique | min')
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
             echo "::error::No artifacts found whose name contains tag $TAG"
             exit 1
           fi
 
-          echo "Resolved run id: $RUN_ID for tag $TAG"
-          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          NAMES=$(echo "$ARTIFACTS_JSON" \
+            | jq -c "[.[] | select(.run_id == ($RUN_ID)) | .name] | unique")
 
-      - name: Download Artifacts
+          echo "Resolved run id: $RUN_ID for tag $TAG"
+          echo "Artifacts to upload: $NAMES"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "artifacts=$NAMES" >> "$GITHUB_OUTPUT"
+
+  Sharepoint:
+    needs: [Date, Enumerate]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read       # required so download-artifact can pull from another run
+    # One artifact per runner: the full ISO set is far larger than any single
+    # runner's disk, so we never download more than one at a time. fail-fast off
+    # so one repo's failure doesn't cancel every other upload.
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        artifact: ${{ fromJson(needs.Enumerate.outputs.artifacts) }}
+
+    steps:
+      - name: Free up workspace disk space
+        run: |
+          echo "Before cleanup:"
+          df -hT .
+          # Reclaim ~20-30GB of preinstalled toolchains we don't need, giving the
+          # large ISOs headroom on the root filesystem (the only disk the docker
+          # upload action can see).
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/.ghcup \
+            /usr/local/share/boost \
+            "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}" || true
+          echo "After cleanup:"
+          df -hT .
+
+      - name: Download artifact ${{ matrix.artifact }}
         uses: actions/download-artifact@v8
         with:
-          merge-multiple: true
-          run-id: ${{ steps.find_run.outputs.run_id }}
+          name: ${{ matrix.artifact }}
+          run-id: ${{ needs.Enumerate.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Validate Artifacts
+      - name: Show downloaded files
         run: |
-          echo -e "Artifacts Downloaded\n$(find . -type f -iname *sha -execdir sha256sum -c {} \;)"
-
-      - name: Show Artifacts
-        run: ls -1sh .
+          ls -1sh .
+          df -h .
 
       # Upload files to Sharepoint
       - name: Send Files to Sharepoint
