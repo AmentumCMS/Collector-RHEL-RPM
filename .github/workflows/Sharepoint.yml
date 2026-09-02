@@ -3,6 +3,12 @@ on:
   release:
     types: [edited, released]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing collection tag to upload (e.g. 20260902-0526). Leave blank to use the release tag. Lets you re-run the upload against an already-collected run without re-collecting.'
+        required: false
+        type: string
+        default: ""
 jobs:
   Date:
     runs-on: ubuntu-latest
@@ -28,9 +34,10 @@ jobs:
           echo -e "\nPermissions on /mnt"
           ls -alht /mnt
 
-  # Resolve the collect.yml run for this tag and enumerate its artifacts so the
-  # Sharepoint job can fan out over them one-at-a-time (a single runner can't
-  # hold every ISO at once -- that overflows the small workspace disk).
+  # Resolve the collect.yml run for this tag and enumerate its ISOs so the
+  # Sharepoint job can fan out over them one-at-a-time. A single ISO can be
+  # ~20GB, far more than the small root disk has free, so each runner stages
+  # exactly one ISO (plus its sidecar files) on the large /mnt disk.
   Enumerate:
     needs: [Date]
     runs-on: ubuntu-latest
@@ -38,13 +45,13 @@ jobs:
       actions: read       # required so we can query artifacts from another run
     outputs:
       run_id: ${{ steps.find.outputs.run_id }}
-      artifacts: ${{ steps.find.outputs.artifacts }}
+      bases: ${{ steps.find.outputs.bases }}
     steps:
-      - name: Resolve source run and artifact list for this tag
+      - name: Resolve source run and ISO list for this tag
         id: find
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
         run: |
           echo "Looking up the collect.yml artifacts whose names match tag: $TAG"
 
@@ -65,57 +72,75 @@ jobs:
             exit 1
           fi
 
-          NAMES=$(echo "$ARTIFACTS_JSON" \
-            | jq -c --argjson run_id "$RUN_ID" '[.[] | select(.run_id == $run_id) | .name] | unique')
+          # One matrix leg per ISO: strip the ".iso" suffix to get a base name
+          # (e.g. epel-9-20260902-0526) that also prefixes its .iso.sha/.iso.txt/.log
+          # sidecars, so each leg can pull the whole set with a single pattern.
+          BASES=$(echo "$ARTIFACTS_JSON" \
+            | jq -c --argjson run_id "$RUN_ID" \
+              '[.[] | select(.run_id == $run_id) | .name | select(endswith(".iso")) | sub("\\.iso$";"")] | unique')
+
+          if [ "$BASES" = "[]" ]; then
+            echo "::error::No .iso artifacts found for tag $TAG (run $RUN_ID)"
+            exit 1
+          fi
 
           echo "Resolved run id: $RUN_ID for tag $TAG"
-          echo "Artifacts to upload: $NAMES"
+          echo "ISO bases to upload: $BASES"
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "artifacts=$NAMES" >> "$GITHUB_OUTPUT"
+          echo "bases=$BASES" >> "$GITHUB_OUTPUT"
 
   Sharepoint:
     needs: [Date, Enumerate]
     runs-on: ubuntu-latest
     permissions:
       actions: read       # required so download-artifact can pull from another run
-    # One artifact per runner: the full ISO set is far larger than any single
-    # runner's disk, so we never download more than one at a time. fail-fast off
-    # so one repo's failure doesn't cancel every other upload.
+    # One ISO per runner. An ISO can be ~20GB but the root disk (which holds
+    # GITHUB_WORKSPACE) has only ~20GB free, so we bind-mount the workspace onto
+    # the large /mnt disk (~74GB). The upstream Sharepoint action is a Docker
+    # action that only sees GITHUB_WORKSPACE -- backing it with /mnt keeps both
+    # the download and the containerized upload on the big disk, no script needed.
     strategy:
       fail-fast: false
       max-parallel: 6
       matrix:
-        artifact: ${{ fromJson(needs.Enumerate.outputs.artifacts) }}
+        base: ${{ fromJson(needs.Enumerate.outputs.bases) }}
 
     steps:
-      - name: Free up workspace disk space
+      - name: Back the workspace with the large /mnt disk
         run: |
-          echo "Before cleanup:"
-          df -hT .
-          # Reclaim ~20-30GB of preinstalled toolchains we don't need, giving the
-          # large ISOs headroom on the root filesystem (the only disk the docker
-          # upload action can see).
-          sudo rm -rf \
-            /usr/local/lib/android \
-            /usr/share/dotnet \
-            /opt/ghc \
-            /usr/local/.ghcup \
-            /usr/local/share/boost \
-            "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}" || true
-          echo "After cleanup:"
-          df -hT .
+          echo "Before:"
+          df -hT / "$GITHUB_WORKSPACE"
+          # Redirect GITHUB_WORKSPACE's storage to /mnt. The bind mount persists
+          # for the whole job, so download-artifact writes the ISO to /mnt and the
+          # Docker upload action (which mounts GITHUB_WORKSPACE) reads it from /mnt.
+          sudo mkdir -p /mnt/workspace
+          sudo mount --bind /mnt/workspace "$GITHUB_WORKSPACE"
+          sudo chown "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+          echo "After:"
+          df -hT "$GITHUB_WORKSPACE"
 
-      - name: Download artifact ${{ matrix.artifact }}
+      - name: Download ${{ matrix.base }} (ISO + sidecars)
         uses: actions/download-artifact@v8
         with:
-          name: ${{ matrix.artifact }}
+          pattern: ${{ matrix.base }}.*
+          merge-multiple: true
           run-id: ${{ needs.Enumerate.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show downloaded files
         run: |
           ls -1sh .
-          df -h .
+          df -h "$GITHUB_WORKSPACE"
+
+      - name: Verify ISO checksum
+        run: |
+          shopt -s nullglob
+          shas=(*.sha)
+          if [ ${#shas[@]} -gt 0 ]; then
+            sha256sum -c "${shas[@]}"
+          else
+            echo "No .sha present; skipping checksum verification"
+          fi
 
       # Upload files to Sharepoint
       - name: Send Files to Sharepoint
