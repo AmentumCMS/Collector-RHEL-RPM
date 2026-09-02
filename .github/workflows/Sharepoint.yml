@@ -44,25 +44,29 @@ jobs:
         id: find
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || github.ref_name }}
         run: |
-          TAG="${{ github.event.release.tag_name || github.ref_name }}"
           echo "Looking up the collect.yml artifacts whose names match tag: $TAG"
 
+          # gh --paginate --jq applies the filter to each page and emits the
+          # results as a concatenated stream, so pipe through `jq -s` to merge
+          # every page into one array. Match on env.TAG to avoid shell quoting.
           ARTIFACTS_JSON=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
             --paginate \
-            --jq "[.artifacts[] | select(.name | contains(\"$TAG\")) | {name, run_id: .workflow_run.id}]")
+            --jq '.artifacts[] | select(.name | contains(env.TAG)) | {name, run_id: .workflow_run.id}' \
+            | jq -s '.')
 
           # Pick a single source run (the smallest run id) and keep only its artifacts,
           # so a tag reused across runs can't mix artifacts from different collections.
-          RUN_ID=$(echo "$ARTIFACTS_JSON" | jq -r '[.[].run_id] | unique | min')
+          RUN_ID=$(echo "$ARTIFACTS_JSON" | jq -r '[.[].run_id] | unique | min // empty')
 
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+          if [ -z "$RUN_ID" ]; then
             echo "::error::No artifacts found whose name contains tag $TAG"
             exit 1
           fi
 
           NAMES=$(echo "$ARTIFACTS_JSON" \
-            | jq -c "[.[] | select(.run_id == ($RUN_ID)) | .name] | unique")
+            | jq -c --argjson run_id "$RUN_ID" '[.[] | select(.run_id == $run_id) | .name] | unique')
 
           echo "Resolved run id: $RUN_ID for tag $TAG"
           echo "Artifacts to upload: $NAMES"
