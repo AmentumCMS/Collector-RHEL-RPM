@@ -63,7 +63,7 @@ jobs:
       #   run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
 
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Show Files
         run: ls -Alht

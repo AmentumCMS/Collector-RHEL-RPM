@@ -75,7 +75,7 @@ jobs:
         run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
 
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Show Files
         run: ls -Alht
@@ -116,6 +116,11 @@ jobs:
         run: |
           echo -e "\nRepo ${{ env.REPO }} Info:\n"
           dnf -y repoinfo ${{ env.REPO }} | tail -n +2
+
+      - name: Tune DNF parallelism
+        run: |
+          echo "max_parallel_downloads=20" >> /etc/dnf/dnf.conf
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
 
       - name: Run Collection for ${{ env.REPO }}
         run: |
@@ -226,7 +231,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download Artifacts
         uses: actions/download-artifact@v8
