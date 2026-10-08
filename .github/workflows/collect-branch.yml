@@ -111,6 +111,11 @@ jobs:
           echo -e "\nRepo ${{ env.REPO }} Info:\n"
           dnf -y repoinfo ${{ env.REPO }} | tail -n +2
 
+      - name: Tune DNF parallelism
+        run: |
+          echo "max_parallel_downloads=20" >> /etc/dnf/dnf.conf
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
+
       - name: Run Collection for ${{ env.REPO }}
         run: |
           cd ${{ env.WORKDIR }}
