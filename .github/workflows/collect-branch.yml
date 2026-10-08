@@ -40,17 +40,22 @@ jobs:
     strategy:
       # max-parallel: 1
       matrix:
-        os: [8, 9, 10]
+        os: [
+          # 8,
+          9,
+          # 10
+        ]
         repo:
           [
-            rhel-matrix-for-x86_64-baseos-rpms,
-            rhel-matrix-for-x86_64-appstream-rpms,
-            codeready-builder-for-rhel-matrix-x86_64-rpms,
-            epel,
-            docker-ce-stable,
-            hashicorp,
+            # rhel-matrix-for-x86_64-baseos-rpms,
+            # rhel-matrix-for-x86_64-appstream-rpms,
+            # codeready-builder-for-rhel-matrix-x86_64-rpms,
+            # epel,
+            # docker-ce-stable,
+            # hashicorp,
+            nodesource-nodejs,
             # microsoft-prod,
-            microsoft-edge,
+            # microsoft-edge,
           ]
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
@@ -102,6 +107,7 @@ jobs:
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
             *"microsoft-prod") SHORT_REPO="Microsoft-Prod${{ matrix.os }}" ;;
             *"microsoft-edge") SHORT_REPO="Microsoft-Edge${{ matrix.os }}" ;;
+            *"nodesource-nodejs") SHORT_REPO="Nodesource${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
