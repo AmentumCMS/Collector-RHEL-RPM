@@ -13,12 +13,12 @@ on:
   workflow_dispatch:
     inputs:
       os:
-        description: 'Comma-separated RHEL major versions to collect (e.g. "8" or "8,9"). Leave blank for all (8,9,10).'
+        description: 'Comma-separated RHEL major versions to collect (e.g. "9" or "9,10"). Leave blank for all (9,10).'
         required: false
         type: string
         default: ""
       repo:
-        description: 'Comma-separated repo keys to collect (e.g. "microsoft-edge" or "epel,hashicorp"). Leave blank for all.'
+        description: 'Comma-separated repo keys to collect (e.g. "rhel-matrix-for-x86_64-baseos-rpms" or "epel,docker-ce"). Leave blank for all.'
         required: false
         type: string
         default: ""
@@ -175,7 +175,7 @@ jobs:
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
-      - name: ISO Table of contents
+      - name: Repo Table of contents
         run: |
           cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
@@ -222,20 +222,7 @@ jobs:
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-
-      # upload to sharepooint test
-      # - name: Send Files to Sharepoint
-      #   uses: amentumcms/sharepoint-file-upload-action@main
-      #   with:
-      #     file_path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-      #     host_name: "${{ secrets.SHAREPOINT_HOST }}"
-      #     site_name: "${{ secrets.SHAREPOINT_SITE }}"
-      #     upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-      #     tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-      #     client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-      #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-      #     login_endpoint: "login.microsoftonline.us"
-      #     graph_endpoint: "graph.microsoft.us"
+          if-no-files-found: error
 
       # Cleanup
       - name: Clean up
@@ -244,9 +231,9 @@ jobs:
           echo "Remove ${{ env.REPO }}"
           rm -rf ${{ env.REPO }}
           echo "Remove Artifacts"
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.txt
           echo "Done"
 
   Release:
