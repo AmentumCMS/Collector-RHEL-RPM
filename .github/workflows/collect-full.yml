@@ -34,7 +34,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        os: [8, 9, 10]
+        os: [9, 10]
         repo:
           [
             rhel-matrix-for-x86_64-baseos-rpms,

@@ -61,7 +61,7 @@ jobs:
           if [ -n "$OS_INPUT" ]; then
             OS_JSON=$(echo "$OS_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(tonumber)')
           else
-            OS_JSON='[8,9,10]'
+            OS_JSON='[9,10]'
           fi
 
           if [ -n "$REPO_INPUT" ]; then
