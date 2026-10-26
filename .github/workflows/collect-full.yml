@@ -1,7 +1,25 @@
 name: RHEL-RPM-Collection (Full)
 run-name: ${{ github.actor }} is Collecting All the RPMS 🚀
 on:
+  push:
+    branches:
+      - main
+
+  release:
+    types: [edited, released]
+
   workflow_dispatch:
+    inputs:
+      os:
+        description: 'Comma-separated RHEL major versions to collect (e.g. "9" or "9,10"). Leave blank for all (9,10).'
+        required: false
+        type: string
+        default: ""
+      repo:
+        description: 'Comma-separated repo keys to collect (e.g. "rhel-matrix-for-x86_64-baseos-rpms" or "epel,docker-ce"). Leave blank for all.'
+        required: false
+        type: string
+        default: ""
 
 jobs:
   Date:
@@ -28,39 +46,59 @@ jobs:
           echo -e "\nPermissions on /mnt"
           ls -alht /mnt
 
+  Matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set.outputs.os }}
+      repo: ${{ steps.set.outputs.repo }}
+    steps:
+      - name: Determine collection matrix
+        id: set
+        run: |
+          OS_INPUT="${{ inputs.os }}"
+          REPO_INPUT="${{ inputs.repo }}"
+
+          if [ -n "$OS_INPUT" ]; then
+            OS_JSON=$(echo "$OS_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(tonumber)')
+          else
+            OS_JSON='[9,10]'
+          fi
+
+          if [ -n "$REPO_INPUT" ]; then
+            REPO_JSON=$(echo "$REPO_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";""))')
+          else
+            REPO_JSON='["rhel-matrix-for-x86_64-baseos-rpms","rhel-matrix-for-x86_64-appstream-rpms","codeready-builder-for-rhel-matrix-x86_64-rpms","epel","docker-ce-stable","nodesource-nodejs","microsoft-edge"]'
+          fi
+
+          echo "Resolved os matrix: $OS_JSON"
+          echo "Resolved repo matrix: $REPO_JSON"
+          echo "os=$OS_JSON" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO_JSON" >> "$GITHUB_OUTPUT"
+
   Collect-RPMs:
-    needs: [Date]
-    runs-on: self-hosted
+    needs: [Date, Matrix]
+    runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      # max-parallel: 1
       matrix:
-        os: [8, 9, 10]
-        repo:
-          [
-            rhel-matrix-for-x86_64-baseos-rpms,
-            rhel-matrix-for-x86_64-appstream-rpms,
-            codeready-builder-for-rhel-matrix-x86_64-rpms,
-            epel,
-            docker-ce-stable,
-            hashicorp,
-            # microsoft-prod,
-            microsoft-edge,
-          ]
-    # container:
-    #   image: docker.io/redhat/ubi${{ matrix.os }}
-    #   env:
-    #     GH_TOKEN: ${{ github.token }}
-    # volumes:
-    #   - $PWD:/mnt
-    # credentials:
-    #   username: ${{ secrets.REGISTRY_USER }}
-    #   password: ${{ secrets.REGISTRY_TOKEN }}
-    # ports:
-    #   - 80
+        os: ${{ fromJson(needs.Matrix.outputs.os) }}
+        repo: ${{ fromJson(needs.Matrix.outputs.repo) }}
+    container:
+      image: docker.io/redhat/ubi${{ matrix.os }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WORKDIR: /mnt
+      volumes:
+        - /mnt:/mnt
+      # credentials:
+      #   username: ${{ secrets.REGISTRY_USER }}
+      #   password: ${{ secrets.REGISTRY_TOKEN }}
+      # ports:
+      #   - 80
 
     steps:
-      # - name: Check for dockerenv file
-      #   run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
+      - name: Check for dockerenv file
+        run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
 
       - name: Check out repository code
         uses: actions/checkout@v7
@@ -69,12 +107,12 @@ jobs:
         run: ls -Alht
 
       - name: List disks
-        run: df -h
+        run: df -h ${{ env.WORKDIR }}
 
-      # - name: Setup Environment
-      #   run: |
-      #     echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
-      #     echo "WORKDIR=/mnt" >> $GITHUB_ENV
+      - name: Setup Environment
+        run: |
+          echo "PATH=$PATH:$PWD/scripts" >> $GITHUB_ENV
+          echo "WORKDIR=/mnt" >> $GITHUB_ENV
 
       - name: Register system and install packages
         run: registerubi.sh '${{ secrets.RHDN_USER }}' '${{ secrets.RHDN_PASS }}'
@@ -95,6 +133,7 @@ jobs:
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
             *"microsoft-prod") SHORT_REPO="Microsoft-Prod${{ matrix.os }}" ;;
             *"microsoft-edge") SHORT_REPO="Microsoft-Edge${{ matrix.os }}" ;;
+            *"nodesource-nodejs") SHORT_REPO="Nodesource${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
@@ -104,8 +143,14 @@ jobs:
           echo -e "\nRepo ${{ env.REPO }} Info:\n"
           dnf -y repoinfo ${{ env.REPO }} | tail -n +2
 
+      - name: Tune DNF parallelism
+        run: |
+          echo "max_parallel_downloads=20" >> /etc/dnf/dnf.conf
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
+
       - name: Run Collection for ${{ env.REPO }}
         run: |
+          cd ${{ env.WORKDIR }}
           echo "Collecting repo ${{ env.REPO }} RPMs"
           reposync-all.sh ${{ env.REPO }}
           echo "Logfile: $(ls -1Ssh *.log)"
@@ -114,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.log
-          path: ${{ env.REPO }}.log
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}.log
           if-no-files-found: error
 
       - name: Unregister system
@@ -122,14 +167,15 @@ jobs:
 
       - name: Show Consumption
         run: |
-          echo -e "Disk Usage $(du -chs ${{ env.REPO }})\n"
-          echo -e "Disk Space $(df -h )"
+          echo -e "Disk Usage $(du -chs ${{ env.WORKDIR }}/${{ env.REPO }})\n"
+          echo -e "Disk Space $(df -h ${{ env.WORKDIR }}/)"
 
       # - name: Copy README to ${{ env.REPO }} ISO
-      #   run: cp -v README.md ${{ env.REPO }}/
+      #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
       - name: Repo Table of contents
         run: |
+          cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
             | tee ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
 
@@ -137,37 +183,44 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
-          path: ${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
           if-no-files-found: error
 
       - name: Make ${{ env.REPO }} ISO
         run: |
-          echo "Making ISOs of ${{ env.REPO }}"
-          chunkiso.sh ${{ env.REPO }} ${{ needs.Date.outputs.Date }}
+          cd ${{ env.WORKDIR }}
+          echo "Making ISO of ${{ env.REPO }}"
+          mkisofs -J -R -v -T -l \
+            -V ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
+            -A ${{ env.SHORT_REPO }}-${{ needs.Date.outputs.Date }} \
+            -o ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso \
+            ${{ env.REPO }}
+
+      - name: Implant MD5 sum into ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+        run: implantisomd5 /mnt/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+
+      - name: Generate ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso Hash
+        run: |
+          cd ${{ env.WORKDIR }}
+          sha256sum -b ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso | tee \
+            ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
 
       - name: Show ISO & Hash
-        run: ls -sS1h *.iso*
+        run: ls -sS1h ${{ env.WORKDIR }}/*.iso*
 
-      - name: Upload ISO SHA artifacts
+      - name: Upload ISO
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
+          if-no-files-found: error
+
+      - name: Upload ISO Hash
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          path: "*.sha"
+          path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           if-no-files-found: error
-
-      # # Send Artifacts to Sharepoint
-      # - name: Send ${{ env.REPO }} ISO artifacts to Sharepoint
-      #   uses: amentumcms/sharepoint-file-upload-action@main
-      #   with:
-      #     file_path: "*.iso*"
-      #     host_name: "${{ secrets.SHAREPOINT_HOST }}"
-      #     site_name: "${{ secrets.SHAREPOINT_SITE }}"
-      #     upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-      #     tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-      #     client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-      #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-      #     login_endpoint: "login.microsoftonline.us"
-      #     graph_endpoint: "graph.microsoft.us"
 
       # Cleanup
       - name: Clean up

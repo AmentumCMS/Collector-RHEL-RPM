@@ -5,9 +5,22 @@ on:
     branches-ignore:
       - main
       - full
+
   release:
     types: [edited, released]
+
   workflow_dispatch:
+    inputs:
+      os:
+        description: 'Comma-separated RHEL major versions to collect (e.g. "9" or "9,10"). Leave blank for all (9,10).'
+        required: false
+        type: string
+        default: ""
+      repo:
+        description: 'Comma-separated repo keys to collect (e.g. "rhel-matrix-for-x86_64-baseos-rpms" or "epel,docker-ce"). Leave blank for all.'
+        required: false
+        type: string
+        default: ""
 
 jobs:
   Date:
@@ -34,24 +47,43 @@ jobs:
           echo -e "\nPermissions on /mnt"
           ls -alht /mnt
 
+  Matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set.outputs.os }}
+      repo: ${{ steps.set.outputs.repo }}
+    steps:
+      - name: Determine collection matrix
+        id: set
+        run: |
+          OS_INPUT="${{ inputs.os }}"
+          REPO_INPUT="${{ inputs.repo }}"
+
+          if [ -n "$OS_INPUT" ]; then
+            OS_JSON=$(echo "$OS_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(tonumber)')
+          else
+            OS_JSON='[9,10]'
+          fi
+
+          if [ -n "$REPO_INPUT" ]; then
+            REPO_JSON=$(echo "$REPO_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";""))')
+          else
+            REPO_JSON='["rhel-matrix-for-x86_64-baseos-rpms","rhel-matrix-for-x86_64-appstream-rpms","codeready-builder-for-rhel-matrix-x86_64-rpms","epel","docker-ce-stable","nodesource-nodejs","microsoft-edge"]'
+          fi
+
+          echo "Resolved os matrix: $OS_JSON"
+          echo "Resolved repo matrix: $REPO_JSON"
+          echo "os=$OS_JSON" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO_JSON" >> "$GITHUB_OUTPUT"
+
   Collect-RPMs:
-    needs: [Date]
+    needs: [Date, Matrix]
     runs-on: ubuntu-latest
     strategy:
       # max-parallel: 1
       matrix:
-        os: [8, 9, 10]
-        repo:
-          [
-            rhel-matrix-for-x86_64-baseos-rpms,
-            rhel-matrix-for-x86_64-appstream-rpms,
-            codeready-builder-for-rhel-matrix-x86_64-rpms,
-            epel,
-            docker-ce-stable,
-            hashicorp,
-            # microsoft-prod,
-            microsoft-edge,
-          ]
+        os: ${{ fromJson(needs.Matrix.outputs.os) }}
+        repo: ${{ fromJson(needs.Matrix.outputs.repo) }}
     container:
       image: docker.io/redhat/ubi${{ matrix.os }}
       env:
@@ -102,6 +134,7 @@ jobs:
             *"docker-ce-stable"*) SHORT_REPO="Docker${{ matrix.os }}" ;;
             *"microsoft-prod") SHORT_REPO="Microsoft-Prod${{ matrix.os }}" ;;
             *"microsoft-edge") SHORT_REPO="Microsoft-Edge${{ matrix.os }}" ;;
+            *"nodesource-nodejs") SHORT_REPO="Nodesource${{ matrix.os }}" ;;
           esac
           echo "SHORT_REPO=$SHORT_REPO"
           echo "SHORT_REPO=$SHORT_REPO" >> $GITHUB_ENV
@@ -141,7 +174,16 @@ jobs:
       # - name: Copy README to ${{ env.REPO }} ISO
       #   run: cp -v README.md ${{ env.WORKDIR }}/${{ env.REPO }}/
 
-      - name: ISO Table of contents
+      - name: Generate SHA Hashes
+        run: |
+          cd ${{ env.WORKDIR }}
+          # Find all files and hash them
+          find . -type f | while read -r file; do
+              # Calculate SHA256 hash relative to top-level directory
+              sha256sum "$file" | tee -a "${{ env.REPO }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.sha"
+          done
+
+      - name: Repo Table of contents
         run: |
           cd ${{ env.WORKDIR }}
           tree ${{ env.REPO }} \
@@ -188,20 +230,7 @@ jobs:
         with:
           name: ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
           path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-
-      # upload to sharepooint test
-      # - name: Send Files to Sharepoint
-      #   uses: amentumcms/sharepoint-file-upload-action@main
-      #   with:
-      #     file_path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-      #     host_name: "${{ secrets.SHAREPOINT_HOST }}"
-      #     site_name: "${{ secrets.SHAREPOINT_SITE }}"
-      #     upload_path: "${{ secrets.SHAREPOINT_BASEPATH }}/${{ vars.COLLECTOR }}/${{ needs.Date.outputs.Date }}"
-      #     tenant_id: ${{ secrets.SHAREPOINT_TENANT_ID }}
-      #     client_id: ${{ secrets.SHAREPOINT_APP_ID }}
-      #     client_secret: ${{ secrets.SHAREPOINT_APP_SECRET }}
-      #     login_endpoint: "login.microsoftonline.us"
-      #     graph_endpoint: "graph.microsoft.us"
+          if-no-files-found: error
 
       # Cleanup
       - name: Clean up
