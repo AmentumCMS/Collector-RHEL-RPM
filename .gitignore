@@ -15,11 +15,13 @@ output/
 
 # Ignore Repositories
 **/rhel-*-for-x86_64-*-rpms/
+**/ubi*-rpms/
 **/codeready-builder-for-rhel-*-x86_64-rpms/
 **/epel*/
 **/microsoft*/
 **/docker-ce-*/
 **/hashicorp/
+**/nodesource-nodejs/
 
 # Ignore Files
 *.tgz
@@ -33,6 +35,7 @@ output/
 *iso.txt
 *iso.sha
 *.dxp
+*.rpm
 
 **/docker-ce-*/
 desktop.ini
