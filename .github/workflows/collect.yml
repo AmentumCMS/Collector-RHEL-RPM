@@ -6,8 +6,10 @@ on:
       - main
   schedule:
     - cron: "0 0 1 * *" # Update Monthly on the 1st
+
   release:
     types: [edited, released]
+
   workflow_dispatch:
     inputs:
       os:
@@ -67,7 +69,7 @@ jobs:
           if [ -n "$REPO_INPUT" ]; then
             REPO_JSON=$(echo "$REPO_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$";""))')
           else
-            REPO_JSON='["rhel-matrix-for-x86_64-baseos-rpms","rhel-matrix-for-x86_64-appstream-rpms","codeready-builder-for-rhel-matrix-x86_64-rpms","epel","docker-ce-stable","hashicorp","microsoft-edge"]'
+            REPO_JSON='["rhel-matrix-for-x86_64-baseos-rpms","rhel-matrix-for-x86_64-appstream-rpms","codeready-builder-for-rhel-matrix-x86_64-rpms","epel","docker-ce-stable","nodesource-nodejs","microsoft-edge"]'
           fi
 
           echo "Resolved os matrix: $OS_JSON"
@@ -142,12 +144,12 @@ jobs:
         run: |
           echo -e "\nRepo ${{ env.REPO }} Info:\n"
           dnf -y repoinfo ${{ env.REPO }} | tail -n +2
-          
+
       - name: Tune DNF parallelism
         run: |
           echo "max_parallel_downloads=20" >> /etc/dnf/dnf.conf
           echo "fastestmirror=True" >> /etc/dnf/dnf.conf
-          
+
       - name: Run Collection for ${{ env.REPO }}
         run: |
           cd ${{ env.WORKDIR }}
