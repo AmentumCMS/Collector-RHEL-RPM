@@ -225,6 +225,7 @@ jobs:
           path: ${{ env.WORKDIR }}/${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
           if-no-files-found: error
 
+      # Upload files to Sharepoint
       - name: Upload ISO Hash
         uses: actions/upload-artifact@v7
         with:
@@ -239,9 +240,9 @@ jobs:
           echo "Remove ${{ env.REPO }}"
           rm -rf ${{ env.REPO }}
           echo "Remove Artifacts"
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.sha
-          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}.iso.txt
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.sha
+          rm -rfv ${{ env.REPO }}-${{ matrix.os }}-${{ needs.Date.outputs.Date }}*.iso.txt
           echo "Done"
 
   Release:
